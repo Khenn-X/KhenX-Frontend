@@ -301,7 +301,7 @@ const NeighbourhoodPage = () => {
         <LagoMarketInsights />
 
         {/* ── TALK TO AN ADVISOR ─────────────────────────────────────────── */}
-        <TalkToAdvisor />
+        <TalkToAdvisor areaName={''} />
 
         {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
         <section className="rounded-2xl bg-[#0A1628] p-8 lg:p-12">

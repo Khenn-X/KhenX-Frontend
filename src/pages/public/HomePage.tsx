@@ -8,7 +8,6 @@ import {
   Star,
 } from "lucide-react";
 import { useListings } from "../../hooks/useListings";
-import NaturalSearchBar from "../../components/search/NaturalSearchBar";
 import ListingCard from "../../components/listings/ListingCard";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 import PageWrapper from "../../components/layout/PageWrapper";

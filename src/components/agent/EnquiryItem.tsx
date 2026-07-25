@@ -18,7 +18,7 @@ const EnquiryItem = ({ enquiry }: EnquiryItemProps) => {
   const status = statusConfig[enquiry.status];
   const StatusIcon = status.icon;
 
-  const listing = enquiry.listingId as { title: string; areaName: string } | null;
+  const listing = enquiry.listingId as unknown as { title: string; areaName: string } | null;
 
   return (
     <div

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useAdminFraudReports } from '../../hooks/useFraud';
-import { FraudReportStatus } from '../../api/fraud.api';
+import type { FraudReportStatus } from '../../api/fraud.api';
 import FraudReportCard from '../../components/admin/FraudReportCard';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorMessage from '../../components/shared/ErrorMessage';

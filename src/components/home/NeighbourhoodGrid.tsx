@@ -1,12 +1,11 @@
-import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import PageWrapper from '../../components/layout/PageWrapper';
 import { useFeaturedAreas } from '../../hooks/useNeighbourhood';
 import type { INeighbourhoodIntelligence } from '../../types/neighbourhood.types';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-const formatRent = (min?: number, max?: number) => {
-  if (!min || !max) return null;
+const formatRent = (min?: number | null, max?: number | null) => {
+  if (min == null || max == null) return null;
   const fmt = (n: number) => {
     if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
     if (n >= 1_000) return `₦${Math.round(n / 1_000)}K`;

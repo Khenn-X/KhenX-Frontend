@@ -38,8 +38,8 @@ export const useUIStore = create<UIState>()((set) => ({
 
   closeSidebar: () => set({ isSidebarOpen: false }),
 
-  openModal: (name, payload = null) =>
-    set({ activeModal: name, modalPayload: payload }),
+  openModal: (name, payload) =>
+    set({ activeModal: name, modalPayload: payload ?? null }),
 
   closeModal: () =>
     set({ activeModal: null, modalPayload: null }),

@@ -8,6 +8,15 @@ export const ROUTES = {
   LISTINGS: '/listings',
   LISTING_DETAIL: (id: string) => `/listings/${id}`,
   NEIGHBOURHOOD: '/neighbourhood',
+  PRICING: '/pricing',
+  FAQ: '/faq',
+  ABOUT: '/about',
+  BLOG: '/blog',
+  CAREERS: '/careers',
+  CONTACT: '/contact',
+  PRIVACY: '/privacy',
+  TERMS: '/terms',
+  COOKIES: '/cookies',
 
   // Auth
   LOGIN: '/login',

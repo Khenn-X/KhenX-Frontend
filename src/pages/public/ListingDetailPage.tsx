@@ -64,11 +64,11 @@ const floodRiskColor = (risk?: string) => {
   return "#EF4444";
 };
 
-const floodRiskBg = (risk?: string) => {
-  if (risk === "low") return "#F0FDF9";
-  if (risk === "medium") return "#FFFBEB";
-  return "#FEF2F2";
-};
+// const floodRiskBg = (risk?: string) => {
+//   if (risk === "low") return "#F0FDF9";
+//   if (risk === "medium") return "#FFFBEB";
+//   return "#FEF2F2";
+// };
 
 const powerScoreToHours = (score?: number) => {
   if (!score) return null;

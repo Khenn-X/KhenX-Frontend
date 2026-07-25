@@ -52,8 +52,9 @@ const AdminNeighbourhoodsPage = () => {
   const [deleteTarget, setDeleteTarget] = useState<{ areaName: string; displayName: string } | null>(null);
 
   const { data, isLoading, isError, refetch } = usePaginatedAreas(currentPage, ITEMS_PER_PAGE, filter);
-  const areas: any[] = useMemo(() => data?.data?.areas ?? [], [data]);
-  const total = data?.data?.total ?? (areas ? areas.length : 0);
+  const paginatedData = data as any;
+  const areas: any[] = useMemo(() => paginatedData?.data?.areas ?? [], [paginatedData]);
+  const total = paginatedData?.data?.total ?? (areas ? areas.length : 0);
 
   const queryClient = useQueryClient();
   const deleteMutation = useMutation({
@@ -309,7 +310,7 @@ const AdminNeighbourhoodsPage = () => {
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="danger"
-        isPending={deleteMutation.isLoading}
+        isPending={deleteMutation.status === 'pending'}
       />
     </div>
   );

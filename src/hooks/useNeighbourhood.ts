@@ -39,7 +39,7 @@ export const usePaginatedAreas = (page = 1, pageSize = 10, search?: string, sort
   useQuery({
     queryKey: [...neighbourhoodKeys.lists(), 'paged', page, pageSize, search ?? '', sortBy ?? ''],
     queryFn: () => neighbourhoodApi.getAllAreas({ page, pageSize, search, sortBy }),
-    keepPreviousData: true,
+    placeholderData: (previousData) => previousData,
     staleTime: 1000 * 60 * 1,
   });
 

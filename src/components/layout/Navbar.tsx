@@ -6,7 +6,6 @@ import { ROUTES } from "../../constants/routes";
 import {
   Menu,
   X,
-  MapPin,
   Heart,
   LayoutDashboard,
   LogOut,
@@ -15,17 +14,14 @@ import {
   Home,
   Building2,
   ShieldCheck,
-  FileText,
   Users,
   BarChart3,
   AlertTriangle,
   ClipboardList,
   Zap,
-  Navigation,
   BookOpen,
   TrendingUp,
   Map,
-  Newspaper,
   Scale,
   Clock,
   BadgeCheck,
@@ -33,11 +29,8 @@ import {
   PlusCircle,
   Info,
   Lightbulb,
-  MessageCircle,
   Award,
-  Handshake,
   HelpCircle,
-  Building,
 } from "lucide-react";
 // Add this import near the top, with your other imports
 import logo from "../../assets/lg-trans.png"; // adjust path/extension to match your file
@@ -74,14 +67,14 @@ const getInitials = (name: string) =>
     .toUpperCase();
 
 // Returns true if a path segment matches the current location
-const useIsActive = (paths: string[]) => {
-  const { pathname } = useLocation();
-  return paths.some((p) => {
-    // exact match for root-level paths, prefix match otherwise
-    if (p === "/") return pathname === "/";
-    return pathname === p || pathname.startsWith(p + "/");
-  });
-};
+// const useIsActive = (paths: string[]) => {
+//   const { pathname } = useLocation();
+//   return paths.some((p) => {
+//     // exact match for root-level paths, prefix match otherwise
+//     if (p === "/") return pathname === "/";
+//     return pathname === p || pathname.startsWith(p + "/");
+//   });
+// };
 
 // ─── Nav structure — 5 focused groups ────────────────────────────────────────
 //

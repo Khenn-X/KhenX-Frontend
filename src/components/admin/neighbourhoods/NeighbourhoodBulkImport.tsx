@@ -88,7 +88,7 @@ const NeighbourhoodBulkImport = ({ onCommit }: { onCommit?: () => void }) => {
       setRows(response.rows);
       setErrors(response.errors || []);
       setPreviewOpen(true);
-      setPreviewMessage(response.message || 'CSV validation complete.');
+      setPreviewMessage('CSV validation complete.');
     } catch (error) {
       const message = (error as Error)?.message || 'Unable to validate the CSV file. Please try again.';
       toast.error(message);

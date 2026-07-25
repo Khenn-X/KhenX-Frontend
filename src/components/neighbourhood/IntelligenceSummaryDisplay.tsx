@@ -10,13 +10,13 @@ interface IntelligenceSummaryDisplayProps {
   layout?: 'grid' | 'stacked';
 }
 
-const iconMap: Record<string, string> = {
-  Zap: '⚡',
-  Droplets: '💧',
-  Shield: '🛡️',
-  Car: '🚗',
-  DollarSign: '💰',
-};
+// const iconMap: Record<string, string> = {
+//   Zap: '⚡',
+//   Droplets: '💧',
+//   Shield: '🛡️',
+//   Car: '🚗',
+//   DollarSign: '💰',
+// };
 
 /**
  * Displays the complete neighbourhood intelligence summary.
@@ -79,7 +79,7 @@ export const IntelligenceSummaryDisplay = React.memo(function IntelligenceSummar
             <div className={cn('rounded-2xl p-6 flex items-center justify-center', getScoreBg(summary.overallScore))}>
               <div className="text-center">
                 <div className={cn('text-4xl font-bold', getScoreColor(summary.overallScore))}>
-                  {summary.overallScore.toFixed(1)}
+                  {summary.overallScore != null ? summary.overallScore.toFixed(1) : 'N/A'}
                 </div>
                 <div className={cn('text-xs font-semibold mt-1', getScoreColor(summary.overallScore))}>
                   / 10

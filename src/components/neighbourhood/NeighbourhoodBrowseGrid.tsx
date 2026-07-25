@@ -1,4 +1,4 @@
-import { useState } from "react";
+// import { useState } from "react";
 import { ArrowUpRight, ChevronDown, Loader2 } from "lucide-react";
 import type { INeighbourhoodIntelligence } from "../../types/neighbourhood.types";
 
@@ -193,7 +193,7 @@ interface NeighbourhoodBrowseGridProps {
   total?: number;
 }
 
-const PAGE_SIZE = 6; // 2 rows of 3
+// const PAGE_SIZE = 6; // 2 rows of 3
 
 export default function NeighbourhoodBrowseGrid({
   areas,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
-import { IFraudReport, FraudReportStatus } from '../../api/fraud.api';
+import type { IFraudReport, FraudReportStatus } from '../../api/fraud.api';
 import { useUpdateFraudReport } from '../../hooks/useFraud';
 import { ROUTES } from '../../constants/routes';
 import { timeAgo, cn } from '../../lib/utils';

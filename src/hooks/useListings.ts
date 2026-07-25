@@ -89,7 +89,8 @@ export const useTogglePauseListing = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => listingsApi.togglePause(id),
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<UpdateListingPayload> }) =>
+      listingsApi.updateListing(id, payload as UpdateListingPayload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.listings.myListings });
     },

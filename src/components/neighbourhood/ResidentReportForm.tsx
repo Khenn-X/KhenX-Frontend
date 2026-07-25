@@ -184,7 +184,7 @@ const NeighbourhoodReportForm = ({ defaultArea = '', className }: NeighbourhoodR
     handleSubmit,
     watch,
     control,
-    setValue,
+    // setValue,
     formState: { errors },
   } = useForm<NeighbourhoodUpdateFormData>({
     resolver: zodResolver(neighbourhoodUpdateSchema),
@@ -197,7 +197,7 @@ const NeighbourhoodReportForm = ({ defaultArea = '', className }: NeighbourhoodR
   // Watch values that drive conditional rendering
   const season           = watch('season');
   const securityIncidents = watch('securityIncidents');
-  const roadChanged      = watch('roadChangedRecently');
+  // const roadChanged      = watch('roadChangedRecently');
   const floodingLevel    = watch('floodingLevel');
 
   const isRainy = season === 'rainy';

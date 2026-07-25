@@ -43,6 +43,7 @@ export const neighbourhoodApi = {
     file: File,
     commit = false,
   ): Promise<{
+    message: string;
     commit: boolean;
     headers: string[];
     rows: Array<{ rowNumber: number; areaName: string; displayName: string; validation: string | null; action: string | null; status: 'ok' | 'error' }>;

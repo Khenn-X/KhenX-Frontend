@@ -2,7 +2,6 @@ import { ShieldCheck, Info } from 'lucide-react';
 import KYCUploadForm from '../../components/agent/KYCUploadForm';
 import { useKYCStatus } from '../../hooks/useKYC';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
-import { cn } from '../../lib/utils';
 
 const WHY_KYC = [
   'Build trust with seekers before they even contact you',

@@ -32,10 +32,13 @@ export interface RentSummary {
 }
 
 export interface INeighbourhoodIntelligence {
+  resolvedRentByBedroom: unknown;
+  lagosWideRentByBedroom: unknown;
   _id:       string;
   areaName:  string;
   displayName: string;
   lga?: string | null;
+  slug: string;
   createdAt: string;
   updatedAt: string;
 
@@ -50,6 +53,29 @@ export interface INeighbourhoodIntelligence {
 
   // ── Structured intelligence (from Intelligence Engine) ──────────
   intelligence?:        NeighbourhoodIntelligenceSummary | null;
+
+  // ── Amenities & area stats (data team populates) ──────────────────
+  amenities?: {
+    hospitals?: string[];
+    schools?:   string[];
+    markets?:   string[];
+    malls?:     string[];
+  };
+  schoolCounts?: {
+    primary?:   number | null;
+    secondary?: number | null;
+    tertiary?:  number | null;
+    total?:     number | null;
+  };
+  bankCount?:            number | null;
+  marketCount?:          number | null;
+  transitSafetyScore?:   number | null; // 0–10
+  motoristCoverageKm?:   number | null;
+  transitNotes?:         string | null;
+  typicalRentRange?: {
+    min?: number | null; // Naira per year
+    max?: number | null;
+  };
 
   // ── Data quality metadata ────────────────────────────────────────
   dataConfidence:    DataConfidence;

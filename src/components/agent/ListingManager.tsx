@@ -36,15 +36,12 @@ const ListingManager = () => {
         icon={Plus}
         title="No listings yet"
         description="Create your first listing to start attracting seekers."
-        action={
-          <Link
-            to={ROUTES.AGENT_LISTINGS_NEW}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#00C9A7] px-4 py-2.5 text-sm font-semibold text-[#0A1628] shadow-sm shadow-[#00C9A7]/30 hover:bg-[#00b396] hover:-translate-y-0.5 transition-all"
-          >
-            <Plus className="h-4 w-4" />
-            Create listing
-          </Link>
-        }
+        action={{
+          label: 'Create listing',
+          onClick: () => {
+            window.location.href = ROUTES.AGENT_LISTINGS_NEW;
+          },
+        }}
       />
     );
   }
@@ -125,7 +122,7 @@ const ListingManager = () => {
                 </Link>
                 {['active', 'paused'].includes(listing.status) && (
                   <button
-                    onClick={() => togglePause(listing._id)}
+                    onClick={() => togglePause({ id: listing._id, payload: {} })}
                     disabled={isToggling}
                     title={listing.status === 'active' ? 'Pause listing' : 'Reactivate listing'}
                     className="rounded-lg p-2 text-slate-400 hover:bg-white hover:text-[#0F172A] hover:shadow-sm disabled:opacity-50 transition-all"

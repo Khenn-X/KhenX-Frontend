@@ -1,4 +1,3 @@
-import React from "react";
 import { Zap, Droplets, ShieldCheck } from "lucide-react";
 import PageWrapper from "../../components/layout/PageWrapper";
 

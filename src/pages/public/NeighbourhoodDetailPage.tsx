@@ -23,7 +23,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useNeighbourhood } from "../../hooks/useNeighbourhood";
-import type { RentBucketKey, RentBucketResolution, RentSummary } from "../../types/neighbourhood.types";
+import type { RentBucketKey, RentBucketResolution } from "../../types/neighbourhood.types";
 import WaitlistForm from "../../components/neighbourhood/WaitlistForm";
 import ResidentReportForm from "../../components/neighbourhood/ResidentReportForm";
 import IntelligenceChat from "../../components/neighbourhood/IntelligenceChat";
@@ -229,8 +229,7 @@ export default function NeighbourhoodDetailPage() {
 
   const { data, isLoading, isError } = useNeighbourhood(decoded);
   const area = data?.data?.area;
-  const waitlist = (data as any)?.data?.waitlistCount;
-  const { data: listingsData, isLoading: isListingsLoading } = useListings({ area: decoded, limit: 6 });
+  const { data: listingsData, isLoading: isListingsLoading } = useListings({ areaName: decoded, limit: 6 });
   const listings = listingsData?.data ?? [];
 
   if (isLoading) {
@@ -247,7 +246,8 @@ export default function NeighbourhoodDetailPage() {
     ? area.floodRisk.charAt(0).toUpperCase() + area.floodRisk.slice(1)
     : "—";
 
-  const twoBedroomRent = area.resolvedRentByBedroom?.['2'];
+  const resolvedRentByBedroom = area.resolvedRentByBedroom as Record<RentBucketKey, RentBucketResolution | undefined> | undefined;
+  const twoBedroomRent = resolvedRentByBedroom?.['2'];
   const rent = twoBedroomRent?.min != null && twoBedroomRent?.max != null
     ? `${formatNaira(twoBedroomRent.min)} – ${formatNaira(twoBedroomRent.max)} / yr`
     : area.avgRentMin && area.avgRentMax
@@ -392,8 +392,12 @@ export default function NeighbourhoodDetailPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {RENT_BUCKETS.map((bucket) => {
-              const resolved = area.resolvedRentByBedroom?.[bucket.key];
-              const lagosWide = area.lagosWideRentByBedroom?.[bucket.key];
+              const resolved = (area.resolvedRentByBedroom as
+                | Record<RentBucketKey, RentBucketResolution | undefined>
+                | undefined)?.[bucket.key] as RentBucketResolution | undefined;
+              const lagosWide = (area.lagosWideRentByBedroom as
+                | Record<RentBucketKey, RentBucketResolution | undefined>
+                | undefined)?.[bucket.key] as RentBucketResolution | undefined;
               const resolvedRange = formatRentRange(resolved?.min, resolved?.max);
               const lagosWideRange = formatRentRange(lagosWide?.min, lagosWide?.max);
 

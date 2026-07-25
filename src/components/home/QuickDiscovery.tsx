@@ -1,4 +1,3 @@
-import React from 'react';
 import { Building2, Home, BedDouble, PiggyBank, Landmark, Gem } from 'lucide-react';
 import PageWrapper from '../../components/layout/PageWrapper';
 

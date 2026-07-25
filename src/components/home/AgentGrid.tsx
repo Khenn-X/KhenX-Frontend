@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import PageWrapper from '../../components/layout/PageWrapper';
 import AgentCard from '../agent/AgentCard';
@@ -21,7 +20,7 @@ function AgentCardSkeleton() {
 
 export default function AgentGrid() {
   const { data, isLoading, isError } = useAgents({ limit: 4 });
-  const profiles = data?.data?.agents ?? [];
+  const profiles = data?.data?.agents?.filter((profile) => profile.agent != null) ?? [];
 
   return (
     <section className="py-16" style={{ backgroundColor: '#EEF2F7' }}>
@@ -47,7 +46,7 @@ export default function AgentGrid() {
             {isLoading
               ? Array.from({ length: 4 }).map((_, i) => <AgentCardSkeleton key={i} />)
               : profiles.map((profile) => (
-                  <AgentCard key={profile.agent._id} profile={profile} />
+                  profile.agent && <AgentCard key={profile.agent._id} profile={profile} />
                 ))}
           </div>
         )}

@@ -13,7 +13,7 @@ import { cn } from '../../lib/utils';
 //   minSecurityScore?: number;
 //   maxFloodRisk?: 'low' | 'medium' | 'high';
 //   features?: Partial<IListingFeatures>;
-export interface ExtendedListingFilters extends ParsedListingFilters {
+export interface ExtendedListingFilters extends Omit<ParsedListingFilters, 'features'> {
   areaNames?: string[];
   minPowerScore?: number;
   minSecurityScore?: number;
