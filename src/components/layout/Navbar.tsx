@@ -6,7 +6,6 @@ import { ROUTES } from "../../constants/routes";
 import {
   Menu,
   X,
-  MapPin,
   Heart,
   LayoutDashboard,
   LogOut,
@@ -15,17 +14,14 @@ import {
   Home,
   Building2,
   ShieldCheck,
-  FileText,
   Users,
   BarChart3,
   AlertTriangle,
   ClipboardList,
   Zap,
-  Navigation,
   BookOpen,
   TrendingUp,
   Map,
-  Newspaper,
   Scale,
   Clock,
   BadgeCheck,
@@ -33,14 +29,11 @@ import {
   PlusCircle,
   Info,
   Lightbulb,
-  MessageCircle,
   Award,
-  Handshake,
   HelpCircle,
-  Building,
 } from "lucide-react";
 // Add this import near the top, with your other imports
-import logo from "../../assets/lg-trans.png"; // adjust path/extension to match your file
+import logo from "../../assets/kgreen.png"; // adjust path/extension to match your file
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -605,7 +598,7 @@ const Navbar = () => {
             onClick={closeAll}
             className="flex items-center shrink-0"
           >
-            <img src={logo} alt="KhenX" className="h-24 w-auto p-2 object-contain" />
+            <img src={logo} alt="KhenX" className="h-12 w-auto p-2 object-contain" />
           </Link>
 
           {/* ── Desktop Nav ──────────────────────────────────────────── */}

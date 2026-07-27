@@ -34,7 +34,7 @@
 | Framework | Express |
 | Database | MongoDB + Mongoose |
 | Auth | JWT stored in httpOnly cookie |
-| Email | Resend |
+| Email | Brevo |
 | File Upload | Cloudinary |
 | AI | Anthropic Claude SDK |
 | Validation | express-validator |
@@ -154,7 +154,7 @@ POST   /resident-report     Body: { areaName, powerHoursDaily, floodedLastSeason
 ### ENQUIRIES — `/api/enquiries`
 ```
 POST   /                    Public. Body: { listingId, seekerName, seekerEmail, seekerPhone?, message }
-                            Triggers email to agent via Resend.
+                            Triggers email to agent via Brevo.
 GET    /agent/my-enquiries  Agent. Own enquiries. Query: ?status=new|read|responded
 PATCH  /:id/status          Agent. Body: { status: 'read'|'responded' }
 ```

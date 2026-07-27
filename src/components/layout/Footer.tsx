@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Mail, MapPin, ArrowRight, Check, Loader2 } from "lucide-react";
 import { ROUTES } from "../../constants/routes";
-import logo from "../../assets/lg-trans.png";
+import logo from "../../assets/kgreen.png";
 
 type SubscribeStatus = "idle" | "loading" | "success" | "error";
 
@@ -73,7 +73,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="col-span-2">
             <Link to={ROUTES.HOME} className="flex items-center gap-1 -ml-2">
-              <img src={logo} alt="KhenX" className="h-24 w-auto" />
+              <img src={logo} alt="KhenX" className="h-12 w-auto mb-4" />
             </Link>
             <p className="text-sm leading-relaxed text-slate-400 max-w-xs">
               Before you pay, know the area. Nigeria's first AI-powered property and neighbourhood intelligence platform.

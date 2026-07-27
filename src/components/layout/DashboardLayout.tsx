@@ -16,7 +16,7 @@ import { useUIStore } from "../../store/ui.store";
 import { useLogout } from "../../hooks/useAuth";
 import { ROUTES } from "../../constants/routes";
 import { cn, getInitials } from "../../lib/utils";
-import logo from "../../assets/lg-trans.png";
+import logo from "../../assets/kgreen.png";
 
 const agentNavItems = [
   { label: "Dashboard", to: ROUTES.AGENT_DASHBOARD, icon: LayoutDashboard },
@@ -76,7 +76,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               alt="KhenX"
               className={cn(
                 "shrink-0 object-contain transition-all duration-300",
-                isSidebarOpen ? "h-18 w-auto object-left" : "h-8 w-8 object-cover object-left rounded-md"
+                isSidebarOpen ? "h-8 w-auto object-left" : "h-8 w-8 object-cover object-left rounded-md"
               )}
             />
             {isSidebarOpen && (

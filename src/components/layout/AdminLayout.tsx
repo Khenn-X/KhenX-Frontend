@@ -10,7 +10,7 @@ import { useLogout } from '../../hooks/useAuth';
 import { useAdminStats } from '../../hooks/useAdmin';
 import { ROUTES } from '../../constants/routes';
 import { cn, getInitials } from '../../lib/utils';
-import logo from '../../assets/lg-trans.png';
+import logo from '../../assets/kgreen.png';
 
 // Nav items for plain admin
 const adminNavItems = [
@@ -90,7 +90,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               alt="KhenX"
               className={cn(
                 'shrink-0 object-contain transition-all duration-300',
-                isSidebarOpen ? 'h-18 w-auto object-left' : 'h-8 w-8 object-cover object-left rounded-md'
+                isSidebarOpen ? 'h-8 w-auto object-left' : 'h-8 w-8 object-cover object-left rounded-md'
               )}
             />
             {isSidebarOpen && (
