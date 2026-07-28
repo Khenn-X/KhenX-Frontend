@@ -57,6 +57,11 @@ export const queryKeys = {
     profile: (id: string) => ['agents', 'profile', id] as const,
   },
 
+  landlords: {
+    list: (params?: { limit?: number; page?: number }) => ['landlords', 'list', params] as const,
+    profile: (id: string) => ['landlords', 'profile', id] as const,
+  },
+
   admin: {
     stats: ['admin', 'stats'] as const,
     agents: ['admin', 'agents'] as const,

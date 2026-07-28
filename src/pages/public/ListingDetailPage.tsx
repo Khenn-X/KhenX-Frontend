@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useListing } from "../../hooks/useListings";
 import { useNeighbourhood } from "../../hooks/useNeighbourhood";
 import { useListings } from "../../hooks/useListings";
+import { useAuth } from "../../hooks/useAuth";
+import { enquiriesApi } from "../../api/enquiries.api";
 import PageWrapper from "../../components/layout/PageWrapper";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 import ErrorMessage from "../../components/shared/ErrorMessage";
@@ -62,12 +64,6 @@ const floodRiskColor = (risk?: string) => {
   if (risk === "low") return "#00C9A7";
   if (risk === "medium") return "#F59E0B";
   return "#EF4444";
-};
-
-const floodRiskBg = (risk?: string) => {
-  if (risk === "low") return "#F0FDF9";
-  if (risk === "medium") return "#FFFBEB";
-  return "#FEF2F2";
 };
 
 const powerScoreToHours = (score?: number) => {
@@ -493,11 +489,52 @@ const ListingDetailPage = () => {
   const [timeSlot, setTimeSlot] = useState("Morning (09-12)");
   const [activePhoto, setActivePhoto] = useState(0);
   const [showToast, setShowToast] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { isAuthenticated, user } = useAuth();
 
-  const handleBookInspection = () => {
-    // TODO: wire up real booking mutation here
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 4000);
+  useEffect(() => {
+    if (user?.fullName) {
+      setContactName(user.fullName);
+    }
+  }, [user?.fullName]);
+
+  const handleBookInspection = async () => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { message: "Please sign in to request an inspection." } });
+      return;
+    }
+
+    if (!id || !date || !contactName) {
+      setErrorMessage("Please choose a preferred date and share your name.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      await enquiriesApi.submitInspectionRequest({
+        listingId: id,
+        preferredDate: date,
+        timeSlot,
+        visitors,
+        contactName,
+        message: `Inspection request for ${contactName}`,
+      });
+
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 4000);
+      setDate("");
+      setVisitors(1);
+      setContactName("");
+      setTimeSlot("Morning (09-12)");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "We could not send your inspection request right now.";
+      setErrorMessage(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const { data: listingData, isLoading, isError, refetch } = useListing(id);
@@ -505,8 +542,8 @@ const ListingDetailPage = () => {
 
   const { data: neighbourhoodData } = useNeighbourhood(listing?.areaName ?? "");
   const intel: INeighbourhoodIntelligence | undefined =
-    (neighbourhoodData as any)?.data?.intelligence ??
-    (neighbourhoodData as any)?.data?.area ??
+    ((neighbourhoodData as { data?: { intelligence?: INeighbourhoodIntelligence; area?: INeighbourhoodIntelligence } } | undefined)?.data?.intelligence) ??
+    ((neighbourhoodData as { data?: { intelligence?: INeighbourhoodIntelligence; area?: INeighbourhoodIntelligence } } | undefined)?.data?.area) ??
     undefined;
 
   const { data: similarData } = useListings({
@@ -517,8 +554,8 @@ const ListingDetailPage = () => {
   const similarListings: IListing[] = (
     Array.isArray(similarData?.data)
       ? similarData!.data
-      : Array.isArray((similarData?.data as any)?.listings)
-        ? (similarData!.data as any).listings
+      : Array.isArray((similarData?.data as { listings?: IListing[] } | undefined)?.listings)
+        ? (similarData!.data as { listings: IListing[] }).listings
         : []
   )
     .filter((l: IListing) => l._id !== id)
@@ -557,6 +594,43 @@ const ListingDetailPage = () => {
   const activeFeatures = Object.entries(listing.features)
     .filter(([, v]) => v === true)
     .map(([k]) => FEATURE_LABELS[k] ?? k);
+
+  const ownerProfile = (listing.agentId ? listing.agentId : listing.landlordId) as
+    | {
+        _id?: string;
+        userId?: { fullName?: string; avatarUrl?: string; email?: string; createdAt?: string } | string | null;
+        businessName?: string;
+        phone?: string;
+        kycStatus?: string;
+        verifiedAt?: string;
+      }
+    | undefined;
+  const ownerUser = ownerProfile?.userId && typeof ownerProfile.userId !== "string"
+    ? ownerProfile.userId
+    : undefined;
+  const ownerName = ownerUser?.fullName?.trim() || ownerProfile?.businessName?.trim() || "Listing owner";
+  const ownerAvatar = ownerUser?.avatarUrl?.trim();
+  const ownerEmail = ownerUser?.email?.trim() || "";
+  const ownerPhone = ownerProfile?.phone?.trim() || "";
+  const ownerKycStatus = ownerProfile?.kycStatus;
+  const ownerBadgeLabel = ownerKycStatus === "approved"
+    ? "Verified KhenX Advisor"
+    : listing.agentId
+      ? "Property contact"
+      : "Listing owner";
+  const ownerRoleLabel = listing.agentId ? "Agent" : "Landlord";
+  const memberSinceYear = ownerProfile?.verifiedAt
+    ? new Date(ownerProfile.verifiedAt).getFullYear()
+    : ownerUser?.createdAt
+      ? new Date(ownerUser.createdAt).getFullYear()
+      : null;
+  const initials = ownerName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "O";
 
   return (
     <div
@@ -1619,29 +1693,44 @@ const ListingDetailPage = () => {
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
                   placeholder="Full Name"
-                  style={inputSt}
+                  readOnly={isAuthenticated && !!user?.fullName}
+                  style={{ ...inputSt, background: isAuthenticated && !!user?.fullName ? "#F8FAFC" : inputSt.background }}
                 />
               </div>
             </div>
 
+            {errorMessage ? (
+              <div style={{ marginTop: 12, color: "#DC2626", fontSize: 12.5, lineHeight: 1.5 }}>
+                {errorMessage}
+              </div>
+            ) : null}
+
             <button
               onClick={handleBookInspection}
+              disabled={isSubmitting}
               style={{
                 width: "100%",
-                background: "#0F172A",
+                background: isSubmitting ? "#64748B" : "#0F172A",
                 color: "#fff",
                 border: "none",
                 borderRadius: 12,
                 padding: "13px",
                 fontSize: 13.5,
                 fontWeight: 700,
-                cursor: "pointer",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
                 marginTop: 20,
                 letterSpacing: "0.1px",
+                opacity: isSubmitting ? 0.9 : 1,
               }}
             >
-              Book Inspection
+              {isSubmitting ? "Sending..." : "Book Inspection"}
             </button>
+
+            {!isAuthenticated ? (
+              <div style={{ marginTop: 10, fontSize: 11.5, color: "#64748B", lineHeight: 1.5 }}>
+                Sign in to send your request to the listing owner.
+              </div>
+            ) : null}
 
             <div
               style={{
@@ -1658,7 +1747,7 @@ const ListingDetailPage = () => {
             </div>
           </div>
 
-          {/* Agent card */}
+          {/* Owner card */}
           <div
             style={{
               background: "#fff",
@@ -1676,22 +1765,36 @@ const ListingDetailPage = () => {
               }}
             >
               <div style={{ position: "relative", flexShrink: 0 }}>
-                <div
-                  style={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: "50%",
-                    background: "linear-gradient(135deg, #0F172A, #334155)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#fff",
-                    fontSize: 16,
-                    fontWeight: 800,
-                  }}
-                >
-                  A
-                </div>
+                {ownerAvatar ? (
+                  <img
+                    src={ownerAvatar}
+                    alt={ownerName}
+                    style={{
+                      width: 46,
+                      height: 46,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "1.5px solid #E2E8F0",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 46,
+                      height: 46,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #0F172A, #334155)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                      fontSize: 16,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {initials}
+                  </div>
+                )}
                 <div
                   style={{
                     position: "absolute",
@@ -1699,25 +1802,47 @@ const ListingDetailPage = () => {
                     right: 1,
                     width: 12,
                     height: 12,
-                    background: "#00C9A7",
+                    background: ownerKycStatus === "approved" ? "#00C9A7" : "#94A3B8",
                     borderRadius: "50%",
                     border: "2px solid #fff",
                   }}
                 />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div
-                  style={{ fontSize: 13.5, fontWeight: 700, color: "#0F172A" }}
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: 700,
+                    color: "#0F172A",
+                    lineHeight: 1.3,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
                 >
-                  KhenX Agent
+                  {ownerName}
                 </div>
-                <div style={{ fontSize: 11, color: "#94A3B8" }}>
-                  Verified KhenX Advisor
+                <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>
+                  {ownerBadgeLabel}
+                </div>
+                {memberSinceYear ? (
+                  <div style={{ fontSize: 10.5, color: "#64748B", marginTop: 3 }}>
+                    Member since {memberSinceYear}
+                  </div>
+                ) : null}
+                <div style={{ fontSize: 10.5, color: "#64748B", marginTop: 2 }}>
+                  {ownerRoleLabel}
                 </div>
               </div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button
+                onClick={() => {
+                  if (ownerPhone) {
+                    window.location.href = `tel:${ownerPhone}`;
+                  }
+                }}
+                disabled={!ownerPhone}
                 style={{
                   flex: 1,
                   border: "1.5px solid #E2E8F0",
@@ -1726,17 +1851,24 @@ const ListingDetailPage = () => {
                   background: "#fff",
                   fontSize: 12,
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: ownerPhone ? "pointer" : "not-allowed",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 6,
-                  color: "#0F172A",
+                  color: ownerPhone ? "#0F172A" : "#94A3B8",
+                  opacity: ownerPhone ? 1 : 0.7,
                 }}
               >
                 <PhoneIcon /> Call
               </button>
               <button
+                onClick={() => {
+                  if (ownerEmail) {
+                    window.location.href = `mailto:${ownerEmail}`;
+                  }
+                }}
+                disabled={!ownerEmail}
                 style={{
                   flex: 1,
                   border: "1.5px solid #E2E8F0",
@@ -1745,12 +1877,13 @@ const ListingDetailPage = () => {
                   background: "#fff",
                   fontSize: 12,
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: ownerEmail ? "pointer" : "not-allowed",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 6,
-                  color: "#0F172A",
+                  color: ownerEmail ? "#0F172A" : "#94A3B8",
+                  opacity: ownerEmail ? 1 : 0.7,
                 }}
               >
                 <MailIcon /> Email

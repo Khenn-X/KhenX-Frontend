@@ -7,6 +7,10 @@ export const ROUTES = {
   HOME: '/',
   LISTINGS: '/listings',
   LISTING_DETAIL: (id: string) => `/listings/${id}`,
+  AGENTS: '/agents',
+  AGENT_DETAIL: (id: string) => `/agents/${id}`,
+  LANDLORDS: '/landlords',
+  LANDLORD_DETAIL: (id: string) => `/landlords/${id}`,
   NEIGHBOURHOOD: '/neighbourhood',
 
   // Auth

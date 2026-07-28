@@ -2,10 +2,24 @@ import api from './axios';
 import type { ApiResponse } from '../types/api.types';
 import type { IEnquiry, SubmitEnquiryPayload, UpdateEnquiryStatusPayload } from '../types/enquiry.types';
 
+interface InspectionRequestPayload {
+  listingId: string;
+  preferredDate: string;
+  timeSlot?: string;
+  visitors?: number;
+  contactName: string;
+  message?: string;
+}
+
 export const enquiriesApi = {
   // Public — submit an enquiry on a listing
   submitEnquiry: async (payload: SubmitEnquiryPayload): Promise<ApiResponse> => {
     const { data } = await api.post('/enquiries', payload);
+    return data;
+  },
+
+  submitInspectionRequest: async (payload: InspectionRequestPayload): Promise<ApiResponse> => {
+    const { data } = await api.post('/enquiries/inspection-request', payload);
     return data;
   },
 

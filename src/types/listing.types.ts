@@ -24,9 +24,29 @@ export interface IListingFeatures {
   internet: boolean;
 }
 
+export interface IListingOwnerUser {
+  _id?: string;
+  fullName?: string;
+  avatarUrl?: string;
+  email?: string;
+  createdAt?: string;
+}
+
+export interface IListingOwnerProfile {
+  _id?: string;
+  userId?: IListingOwnerUser | string | null;
+  businessName?: string;
+  phone?: string;
+  bio?: string;
+  kycStatus?: string;
+  tier?: string;
+  verifiedAt?: string;
+}
+
 export interface IListing {
   _id: string;
-  agentId: string;
+  agentId?: IListingOwnerProfile | string | null;
+  landlordId?: IListingOwnerProfile | string | null;
   title: string;
   description: string;
   propertyType: PropertyType;

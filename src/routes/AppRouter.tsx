@@ -33,6 +33,10 @@ const NeighbourhoodComparePage = lazy(
   () => import("../pages/public/NeighbourhoodComparePage"),
 );
 const ContributePage = lazy(() => import("../pages/public/ContributeDataPage"));
+const AgentsPage = lazy(() => import("../pages/public/AgentsPage"));
+const AgentProfilePagePublic = lazy(() => import("../pages/public/AgentProfilePage"));
+const LandlordsPage = lazy(() => import("../pages/public/LandlordsPage"));
+const LandlordProfilePagePublic = lazy(() => import("../pages/public/LandlordProfilePage.tsx"));
 const NotFoundPage = lazy(() => import("../pages/public/NotFoundPage"));
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -161,6 +165,38 @@ const AppRouter = () => {
           element={
             <PublicLayout>
               <ListingDetailPage />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/agents"
+          element={
+            <PublicLayout>
+              <AgentsPage />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/agents/:id"
+          element={
+            <PublicLayout>
+              <AgentProfilePagePublic />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/landlords"
+          element={
+            <PublicLayout>
+              <LandlordsPage />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/landlords/:id"
+          element={
+            <PublicLayout>
+              <LandlordProfilePagePublic />
             </PublicLayout>
           }
         />
