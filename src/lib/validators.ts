@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { isResidentialPropertyType } from './listingPropertyTypes';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -39,34 +38,79 @@ export const resetPasswordSchema = z
 
 // ─── Listing ──────────────────────────────────────────────────────────────────
 
-export const listingSchema = z.object({
+const optionalCoercedNumber = (min = 0, message = 'Must be at least 0') =>
+  z.preprocess(
+    (value) => {
+      if (value === '' || value === null || value === undefined || (typeof value === 'number' && Number.isNaN(value))) {
+        return undefined;
+      }
+      return value;
+    },
+    z.coerce.number().min(min, message).optional()
+  );
+
+const landPropertyTypeSchema = z.string().superRefine((value, ctx) => {
+  if (value !== 'land') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Property type must be "land" for land listings',
+    });
+  }
+});
+
+const buildingPropertyTypeSchema = z.string().superRefine((value, ctx) => {
+  const allowedBuildingPropertyTypes = ['apartment', 'duplex', 'bungalow', 'self-con', 'mini-flat', 'terrace', 'detached_house', 'semi_detached', 'penthouse', 'studio', 'office', 'shop', 'commercial'];
+
+  if (value === 'land') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Property type "land" is not valid for building listings',
+    });
+    return;
+  }
+
+  if (!allowedBuildingPropertyTypes.includes(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Please select a property type',
+    });
+  }
+});
+
+export const baseListingSchema = z.object({
   title: z.string().min(10, 'Title must be at least 10 characters'),
   description: z.string().min(30, 'Description must be at least 30 characters'),
+  propertyCategory: z.enum(['land', 'building'], { error: 'Please select a property category' }),
   propertyType: z.enum(
-    ['apartment', 'duplex', 'bungalow', 'self-con', 'mini-flat', 'terrace', 'detached', 'land', 'commercial'],
+    ['apartment', 'duplex', 'bungalow', 'self-con', 'mini-flat', 'terrace', 'detached_house', 'semi_detached', 'penthouse', 'studio', 'office', 'shop', 'land', 'commercial'],
     { error: 'Please select a property type' }
   ),
   listingType: z.enum(['rent', 'sale', 'short-let'], {
     error: 'Please select a listing type',
   }),
-  bedrooms: z
-    .number({ error: 'Please enter number of bedrooms' })
-    .min(0, 'Bedrooms cannot be negative')
-    .optional(),
-  bathrooms: z
-    .number({ error: 'Please enter number of bathrooms' })
-    .min(0, 'Bathrooms cannot be negative')
-    .optional(),
+  bedrooms: optionalCoercedNumber(0, 'Bedrooms cannot be negative'),
+  bathrooms: optionalCoercedNumber(0, 'Bathrooms cannot be negative'),
   areaName: z.string().min(2, 'Area name is required'),
   neighbourhoodId: z.string().nullable().optional(),
   estateName: z.string().optional(),
-  price: z
-    .number({ error: 'Please enter a valid price' })
-    .positive('Price must be greater than zero'),
-  pricePeriod: z.enum(['yearly', 'monthly', 'nightly'], {
+  coordinates: z
+    .object({
+      latitude: optionalCoercedNumber(-90, 'Latitude must be >= -90').refine((value) => value === undefined || value <= 90, {
+        message: 'Latitude must be <= 90',
+      }),
+      longitude: optionalCoercedNumber(-180, 'Longitude must be >= -180').refine((value) => value === undefined || value <= 180, {
+        message: 'Longitude must be <= 180',
+      }),
+    })
+    .optional(),
+  lga: z.string().optional(),
+  state: z.string().optional(),
+  nearbyLandmark: z.string().optional(),
+  price: z.coerce.number({ error: 'Please enter a valid price' }).positive('Price must be greater than zero'),
+  pricePeriod: z.enum(['yearly', 'monthly', 'nightly', 'one-time'], {
     error: 'Please select a price period',
   }),
-  serviceCharge: z.number().min(0, 'Service charge cannot be negative').optional(),
+  serviceCharge: optionalCoercedNumber(0, 'Service charge cannot be negative'),
   features: z.object({
     generator: z.boolean().default(false),
     borehole: z.boolean().default(false),
@@ -77,13 +121,223 @@ export const listingSchema = z.object({
     cctv: z.boolean().default(false),
     internet: z.boolean().default(false),
   }),
-}).superRefine((data, ctx) => {
-  if (isResidentialPropertyType(data.propertyType)) {
+  nearbyPlaces: z
+    .object({
+      schools: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      hospitals: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      shoppingMalls: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      markets: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      churches: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      mosques: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      fuelStations: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      policeStations: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+    })
+    .optional(),
+  nearbyAmenities: z
+    .object({
+      schools: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      hospitals: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      malls: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      markets: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      supermarkets: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      churches: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      mosques: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      banks: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      fuelStations: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+      pharmacies: z.array(z.object({ name: z.string().optional(), distanceKm: optionalCoercedNumber(0), notes: z.string().optional() })).optional(),
+    })
+    .optional(),
+});
+
+const landDetailsSchema = z
+  .object({
+    purpose: z.enum(['sale', 'lease']).optional(),
+    pricePerSquareMeter: optionalCoercedNumber(0, 'Must be at least 0'),
+    plotSizeSqm: optionalCoercedNumber(0, 'Must be at least 0'),
+    totalLandAreaSqm: optionalCoercedNumber(0, 'Must be at least 0'),
+    numberOfPlots: optionalCoercedNumber(0, 'Must be at least 0'),
+    landShape: z.enum(['rectangular', 'square', 'irregular']).optional(),
+    topography: z.enum(['flat', 'sloping']).optional(),
+    landCondition: z.enum(['dry_land', 'swampy_land', 'sand_filled', 'reclaimed_land', 'rocky_land']).optional(),
+    soilType: z.string().optional(),
+    fenced: z.boolean().optional(),
+    gated: z.boolean().optional(),
+    surveyed: z.boolean().optional(),
+    cornerPiece: z.boolean().optional(),
+    waterfront: z.boolean().optional(),
+    facingMajorRoad: z.boolean().optional(),
+    insideEstate: z.boolean().optional(),
+    orientation: z.string().optional(),
+    titleTypes: z.array(
+      z.enum([
+        'certificate_of_occupancy',
+        'governors_consent',
+        'gazette',
+        'registered_survey',
+        'excision',
+        'deed_of_assignment',
+        'allocation_letter',
+        'registered_deed',
+        'family_receipt',
+        'receipt_and_survey',
+        'freehold',
+      ])
+    )
+    .optional(),
+    titleStatus: z.enum(['verified', 'pending', 'unverified']).optional(),
+    utilities: z
+      .object({
+        electricityNearby: z.boolean().optional(),
+        waterSupply: z.boolean().optional(),
+        boreholeAccess: z.boolean().optional(),
+        drainage: z.boolean().optional(),
+        internetCoverage: z.boolean().optional(),
+        roadAccess: z.boolean().optional(),
+        streetLighting: z.boolean().optional(),
+        sewage: z.boolean().optional(),
+      })
+      .optional(),
+    developmentPotential: z.array(z.string()).optional(),
+    roadType: z.enum(['tarred_road', 'untarred_road']).optional(),
+    distanceToExpresswayKm: optionalCoercedNumber(0, 'Must be at least 0'),
+    distanceToMajorRoadKm: optionalCoercedNumber(0, 'Must be at least 0'),
+    publicTransportAccess: z.string().optional(),
+    estateInfo: z
+      .object({
+        gatedEstate: z.boolean().optional(),
+        security: z.boolean().optional(),
+        estateFees: optionalCoercedNumber(0, 'Must be at least 0'),
+        buildingRestrictions: z.string().optional(),
+        developmentStage: z.string().optional(),
+      })
+      .optional(),
+  })
+  .optional();
+
+const buildingDetailsSchema = z
+  .object({
+    toilets: optionalCoercedNumber(0, 'Must be at least 0'),
+    floors: optionalCoercedNumber(0, 'Must be at least 0'),
+    livingRooms: optionalCoercedNumber(0, 'Must be at least 0'),
+    diningArea: z.boolean().optional(),
+    kitchen: z.boolean().optional(),
+    balcony: z.boolean().optional(),
+    studyRoom: z.boolean().optional(),
+    maidsRoom: z.boolean().optional(),
+    storeRoom: z.boolean().optional(),
+    laundryRoom: z.boolean().optional(),
+    walkInCloset: z.boolean().optional(),
+    terrace: z.boolean().optional(),
+    penthouseLevel: optionalCoercedNumber(0, 'Must be at least 0'),
+    totalFloorAreaSqm: optionalCoercedNumber(0, 'Must be at least 0'),
+    landSizeSqm: optionalCoercedNumber(0, 'Must be at least 0'),
+    yearBuilt: optionalCoercedNumber(1800, 'Year built is invalid').refine((value) => value === undefined || value >= 1800, {
+      message: 'Year built is invalid',
+    }),
+    lastRenovated: z.string().optional(),
+    interiorFeatures: z
+      .object({
+        popCeiling: z.boolean().optional(),
+        tiles: z.boolean().optional(),
+        marbleFlooring: z.boolean().optional(),
+        woodenFloor: z.boolean().optional(),
+        airConditioning: z.boolean().optional(),
+        waterHeater: z.boolean().optional(),
+        fittedKitchen: z.boolean().optional(),
+        kitchenCabinets: z.boolean().optional(),
+        oven: z.boolean().optional(),
+        microwave: z.boolean().optional(),
+        refrigerator: z.boolean().optional(),
+        smartHomeFeatures: z.boolean().optional(),
+        cctv: z.boolean().optional(),
+        intercom: z.boolean().optional(),
+        smokeDetector: z.boolean().optional(),
+        fireAlarm: z.boolean().optional(),
+      })
+      .optional(),
+    exteriorFeatures: z
+      .object({
+        swimmingPool: z.boolean().optional(),
+        gym: z.boolean().optional(),
+        garden: z.boolean().optional(),
+        playground: z.boolean().optional(),
+        parkingSpaces: optionalCoercedNumber(0, 'Must be at least 0'),
+        carport: z.boolean().optional(),
+        securityHouse: z.boolean().optional(),
+        fence: z.boolean().optional(),
+        gate: z.boolean().optional(),
+        generator: z.boolean().optional(),
+        borehole: z.boolean().optional(),
+        waterTank: z.boolean().optional(),
+        solarPower: z.boolean().optional(),
+        elevator: z.boolean().optional(),
+        rooftopLounge: z.boolean().optional(),
+      })
+      .optional(),
+    utilities: z
+      .object({
+        electricity: z.boolean().optional(),
+        waterSupply: z.boolean().optional(),
+        borehole: z.boolean().optional(),
+        internet: z.boolean().optional(),
+        cableTv: z.boolean().optional(),
+        sewage: z.boolean().optional(),
+        drainage: z.boolean().optional(),
+        wasteDisposal: z.boolean().optional(),
+      })
+      .optional(),
+    securityFeatures: z
+      .object({
+        estateSecurity: z.boolean().optional(),
+        cctv: z.boolean().optional(),
+        gatedCommunity: z.boolean().optional(),
+        accessControl: z.boolean().optional(),
+        securityGuards: z.boolean().optional(),
+        electricFence: z.boolean().optional(),
+      })
+      .optional(),
+  })
+  .optional();
+
+const landListingSchema = baseListingSchema.extend({
+  propertyCategory: z.literal('land'),
+  propertyType: landPropertyTypeSchema,
+  pricePeriod: z.enum(['yearly', 'one-time'], { error: 'Please select a price period' }),
+  bedrooms: z.undefined().optional(),
+  bathrooms: z.undefined().optional(),
+  landDetails: landDetailsSchema,
+  buildingDetails: z.unknown().superRefine((value, ctx) => {
+    if (value !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Building details are not valid for land listings',
+      });
+    }
+  }).optional(),
+});
+
+const buildingListingSchema = baseListingSchema.extend({
+  propertyCategory: z.literal('building'),
+  propertyType: buildingPropertyTypeSchema,
+  pricePeriod: z.enum(['yearly', 'monthly', 'nightly'], { error: 'Please select a price period' }),
+  landDetails: z.unknown().superRefine((value, ctx) => {
+    if (value !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Land details are not valid for building listings',
+      });
+    }
+  }).optional(),
+  buildingDetails: buildingDetailsSchema,
+});
+
+export const listingSchema = z.discriminatedUnion('propertyCategory', [landListingSchema, buildingListingSchema]).superRefine((data, ctx) => {
+  if (data.propertyCategory === 'building') {
     if (data.bedrooms == null) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['bedrooms'],
-        message: 'Bedrooms are required for residential properties',
+        message: 'Bedrooms are required for building listings',
       });
     }
 
@@ -91,10 +345,11 @@ export const listingSchema = z.object({
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['bathrooms'],
-        message: 'Bathrooms are required for residential properties',
+        message: 'Bathrooms are required for building listings',
       });
     }
   }
+
 });
 
 // ─── Enquiry ──────────────────────────────────────────────────────────────────
@@ -251,7 +506,33 @@ export type SignupFormData = z.infer<typeof signupSchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
-export type ListingFormData = z.infer<typeof listingSchema>;
+export type ListingFormData = z.infer<typeof baseListingSchema>;
+export type ListingSubmissionData = z.infer<typeof listingSchema>;
+
+export const normalizeListingSubmissionData = (data: ListingFormData): ListingFormData => {
+  const basePayload: ListingFormData = {
+    ...data,
+    serviceCharge: data.serviceCharge ?? 0,
+    nearbyPlaces: data.nearbyPlaces ?? ((data as ListingFormData & { landDetails?: { nearbyPlaces?: ListingFormData['nearbyPlaces'] } }).landDetails?.nearbyPlaces),
+    nearbyAmenities: data.nearbyAmenities ?? ((data as ListingFormData & { buildingDetails?: { nearbyAmenities?: ListingFormData['nearbyAmenities'] } }).buildingDetails?.nearbyAmenities),
+  } as ListingFormData;
+
+  if (data.propertyCategory === 'land') {
+    const { bedrooms: _bedrooms, bathrooms: _bathrooms, buildingDetails: _buildingDetails, ...rest } = basePayload as Record<string, unknown>;
+    void _bedrooms;
+    void _bathrooms;
+    void _buildingDetails;
+    return rest as ListingFormData;
+  }
+
+  if (data.propertyCategory === 'building') {
+    const { landDetails: _landDetails, ...rest } = basePayload as Record<string, unknown>;
+    void _landDetails;
+    return rest as ListingFormData;
+  }
+
+  return basePayload;
+};
 export type EnquiryFormData = z.infer<typeof enquirySchema>;
 export type WaitlistFormData = z.infer<typeof waitlistSchema>;
 export type ResidentReportFormData = z.infer<typeof residentReportSchema>;

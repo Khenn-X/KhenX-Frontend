@@ -63,10 +63,41 @@ export const timeAgo = (date: string | Date): string => {
  */
 export const formatPriceWithPeriod = (
   price: number,
-  period: 'yearly' | 'monthly' | 'nightly'
+  period?: 'yearly' | 'monthly' | 'nightly' | null
 ): string => {
+  const base = formatNaira(price);
+  if (!period) return base;
+
   const periodMap = { yearly: 'yr', monthly: 'mo', nightly: 'night' };
-  return `${formatNaira(price)}/${periodMap[period]}`;
+  return `${base}/${periodMap[period]}`;
+};
+
+export const getListingSummaryMeta = ({
+  propertyCategory,
+  propertyType,
+  bedrooms,
+  bathrooms,
+}: {
+  propertyCategory?: string | null;
+  propertyType?: string | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+}) => {
+  const normalizedPropertyType = propertyType ? capitalize(propertyType) : 'Property';
+
+  if (propertyCategory === 'land') {
+    return {
+      showBedBath: false,
+      propertyLabel: normalizedPropertyType === 'Land' ? 'Land' : normalizedPropertyType,
+    };
+  }
+
+  return {
+    showBedBath: true,
+    propertyLabel: normalizedPropertyType,
+    bedLabel: bedrooms === 0 ? 'Self-con' : `${bedrooms ?? 0} bed`,
+    bathLabel: `${bathrooms ?? 0} bath`,
+  };
 };
 
 /**

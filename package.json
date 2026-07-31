@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "tsx src/lib/validators.test.ts src/lib/utils.test.ts",
+    "test:validators": "tsx src/lib/validators.test.ts src/lib/utils.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
@@ -18,6 +20,8 @@
     "axios": "^1.18.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.43.0",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.18.0",
     "morgan": "^1.11.0",
     "radix-ui": "^1.5.0",
@@ -25,6 +29,7 @@
     "react-dom": "^19.2.6",
     "react-hook-form": "^7.79.0",
     "react-hot-toast": "^2.6.0",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.17.0",
     "shadcn": "^4.11.0",
     "tailwind-merge": "^3.6.0",
@@ -35,6 +40,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.3.1",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -46,6 +52,7 @@
     "globals": "^17.6.0",
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.1",
+    "tsx": "^4.16.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"

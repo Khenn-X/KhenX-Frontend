@@ -1,13 +1,15 @@
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import ListingForm from '../../components/listings/ListingForm';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorMessage from '../../components/shared/ErrorMessage';
 import { useListing, useUpdateListing } from '../../hooks/useListings';
 import { ROUTES } from '../../constants/routes';
 import type { ListingFormData } from '../../lib/validators';
+import type { UpdateListingPayload } from '../../types/listing.types';
 
 const EditListingPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data, isLoading, isError, error, refetch } = useListing(id!);
   const { mutate: updateListing, isPending } = useUpdateListing(id!);
 
@@ -17,13 +19,30 @@ const EditListingPage = () => {
   if (isError) return <ErrorMessage message={error?.message} onRetry={refetch} />;
   if (!listing) return <Navigate to={ROUTES.AGENT_LISTINGS} replace />;
 
-  const handleEditListing = (data: ListingFormData) => {
-    updateListing(data);
+  const handleEditListing = (data: ListingFormData, photos: File[]) => {
+    const normalizedPayload: UpdateListingPayload = {
+      ...data,
+      propertyCategory: data.propertyCategory ?? 'building',
+      bedrooms: data.propertyCategory === 'building' ? data.bedrooms : undefined,
+      bathrooms: data.propertyCategory === 'building' ? data.bathrooms : undefined,
+      serviceCharge: data.serviceCharge ?? 0,
+      neighbourhoodId: data.neighbourhoodId ?? undefined,
+    };
+
+    updateListing(
+      { payload: normalizedPayload, photos },
+      {
+        onSuccess: () => {
+          navigate(ROUTES.AGENT_LISTINGS, { replace: true });
+        },
+      }
+    );
   };
 
   const defaultValues = listing
     ? {
         ...listing,
+        propertyCategory: listing.propertyCategory ?? 'building',
         neighbourhoodId: listing.neighbourhoodId ?? undefined,
       }
     : undefined;

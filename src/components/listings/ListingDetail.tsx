@@ -14,6 +14,8 @@ interface ListingDetailProps {
 
 const ListingDetail = ({ listing }: ListingDetailProps) => {
   const isResidential = isResidentialPropertyType(listing.propertyType);
+  const bedrooms = listing.bedrooms ?? 0;
+  const bathrooms = listing.bathrooms ?? 0;
 
   return (
     <div className="space-y-8">
@@ -46,12 +48,12 @@ const ListingDetail = ({ listing }: ListingDetailProps) => {
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Bed className="h-4 w-4 text-[#00C9A7]" />
                   <span className="font-medium">
-                    {listing.bedrooms === 0 ? 'Self-contained' : `${listing.bedrooms} bedroom${listing.bedrooms > 1 ? 's' : ''}`}
+                    {bedrooms === 0 ? 'Self-contained' : `${bedrooms} bedroom${bedrooms > 1 ? 's' : ''}`}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Bath className="h-4 w-4 text-[#00C9A7]" />
-                  <span className="font-medium">{listing.bathrooms} bathroom{listing.bathrooms > 1 ? 's' : ''}</span>
+                  <span className="font-medium">{bathrooms} bathroom{bathrooms > 1 ? 's' : ''}</span>
                 </div>
               </>
             )}

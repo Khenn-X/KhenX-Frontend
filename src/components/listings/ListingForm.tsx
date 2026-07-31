@@ -1,10 +1,37 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FileText, MapPin, BedDouble, Wallet, Sparkles, ImageIcon, Send, type LucideIcon } from 'lucide-react';
-import { listingSchema, type ListingFormData } from '../../lib/validators';
-import { isResidentialPropertyType } from '../../lib/listingPropertyTypes';
-import { PROPERTY_TYPES, LISTING_TYPES, PRICE_PERIODS, BEDROOM_OPTIONS } from '../../types/listing.types';
+import { listingSchema, normalizeListingSubmissionData, type ListingFormData } from '../../lib/validators';
+import LandDetailsSection from './LandDetailsSection';
+import BuildingDetailsSection from './BuildingDetailsSection';
+import {
+  LAND_PROPERTY_TYPES,
+  BUILDING_PROPERTY_TYPES,
+  LISTING_TYPES,
+  PRICE_PERIODS,
+  BEDROOM_OPTIONS,
+} from '../../types/listing.types';
+
+const LAND_PRICE_PERIODS = ['yearly', 'one-time'] as const;
+const BUILDING_PRICE_PERIODS = PRICE_PERIODS;
+
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  apartment: 'Apartment',
+  duplex: 'Duplex',
+  bungalow: 'Bungalow',
+  'self-con': 'Self-con',
+  'mini-flat': 'Mini-flat',
+  terrace: 'Terrace',
+  detached_house: 'Detached house',
+  semi_detached: 'Semi-detached',
+  penthouse: 'Penthouse',
+  studio: 'Studio',
+  office: 'Office',
+  shop: 'Shop',
+  land: 'Land',
+  commercial: 'Commercial',
+};
 import { LAGOS_AREAS } from '../../constants/lagos-areas';
 import { neighbourhoodApi } from '../../api/neighbourhood.api';
 import { FeaturesCheckbox } from './FeaturesCheckbox';
@@ -24,6 +51,66 @@ interface ListingFormProps {
 const DEFAULT_FEATURES = {
   generator: false, borehole: false, security: false, parking: false,
   gym: false, pool: false, cctv: false, internet: false,
+};
+
+const buildFormDefaultValues = (values?: Partial<ListingFormData>): Partial<ListingFormData> => {
+  const propertyCategory = values?.propertyCategory ?? 'building';
+  const isBuilding = propertyCategory === 'building';
+  const isLand = propertyCategory === 'land';
+
+  const formDefaults: Partial<ListingFormData> = {
+    features: {
+      ...DEFAULT_FEATURES,
+      ...(values?.features ?? {}),
+    },
+    nearbyPlaces: {
+      ...(values?.nearbyPlaces ?? {}),
+    },
+    nearbyAmenities: {
+      ...(values?.nearbyAmenities ?? {}),
+    },
+    pricePeriod: values?.pricePeriod ?? 'yearly',
+    listingType: values?.listingType ?? 'rent',
+    propertyCategory,
+    propertyType: values?.propertyType ?? (isLand ? 'land' : 'apartment'),
+    bedrooms: isBuilding ? (values?.bedrooms ?? 1) : undefined,
+    bathrooms: isBuilding ? (values?.bathrooms ?? 1) : undefined,
+    ...values,
+  };
+
+  if (isBuilding) {
+    formDefaults.buildingDetails = {
+      ...(values?.buildingDetails ?? {}),
+      interiorFeatures: {
+        ...(values?.buildingDetails?.interiorFeatures ?? {}),
+      },
+      exteriorFeatures: {
+        ...(values?.buildingDetails?.exteriorFeatures ?? {}),
+      },
+      utilities: {
+        ...(values?.buildingDetails?.utilities ?? {}),
+      },
+      securityFeatures: {
+        ...(values?.buildingDetails?.securityFeatures ?? {}),
+      },
+    };
+    formDefaults.landDetails = undefined;
+  }
+
+  if (isLand) {
+    formDefaults.landDetails = {
+      ...(values?.landDetails ?? {}),
+      utilities: {
+        ...(values?.landDetails?.utilities ?? {}),
+      },
+      estateInfo: {
+        ...(values?.landDetails?.estateInfo ?? {}),
+      },
+    };
+    formDefaults.buildingDetails = undefined;
+  }
+
+  return formDefaults;
 };
 
 type FormSectionProps = {
@@ -79,24 +166,34 @@ const ListingForm = ({
     handleSubmit,
     control,
     watch,
+    setValue,
+    clearErrors,
+    trigger,
+    getValues,
+    reset,
     formState: { errors },
   } = useForm<ListingFormData>({
     resolver: zodResolver(listingSchema) as never,
-    defaultValues: {
-      features: DEFAULT_FEATURES,
-      pricePeriod: 'yearly',
-      listingType: 'rent',
-      bedrooms: 1,
-      bathrooms: 1,
-      ...defaultValues,
-    },
+    shouldUnregister: true,
+    defaultValues: buildFormDefaultValues(defaultValues),
   });
 
   // eslint-disable-next-line react-hooks/incompatible-library
+  const selectedPropertyCategory = watch('propertyCategory') as ListingFormData['propertyCategory'] | undefined;
   const selectedPropertyType = watch('propertyType') as ListingFormData['propertyType'] | undefined;
+  const selectedListingType = watch('listingType') as ListingFormData['listingType'] | undefined;
   const watchedValues = watch();
   const onDraftRef = useRef(onDraft);
-  const isResidential = isResidentialPropertyType(selectedPropertyType ?? 'apartment');
+  const isBuildingCategory = selectedPropertyCategory === 'building';
+  const isLandCategory = selectedPropertyCategory === 'land';
+  const propertyTypeOptions = isLandCategory ? LAND_PROPERTY_TYPES : BUILDING_PROPERTY_TYPES;
+  const defaultBuildingPropertyType = BUILDING_PROPERTY_TYPES[0];
+  const pricePeriodOptions = isLandCategory
+    ? selectedListingType === 'sale'
+      ? LAND_PRICE_PERIODS
+      : ['yearly']
+    : BUILDING_PRICE_PERIODS;
+
 
   const inputClass = (hasError: boolean) =>
     cn(
@@ -144,6 +241,62 @@ const ListingForm = ({
   });
 
   useEffect(() => {
+    if (!defaultValues) return;
+    reset(buildFormDefaultValues(defaultValues));
+  }, [defaultValues, reset]);
+
+  useEffect(() => {
+    if (!isBuildingCategory) {
+      clearErrors(['bedrooms', 'bathrooms']);
+      return;
+    }
+
+    void trigger(['bedrooms', 'bathrooms']);
+  }, [isBuildingCategory, clearErrors, trigger]);
+
+  useEffect(() => {
+    if (!isLandCategory) return;
+
+    if (selectedListingType === 'sale') {
+      setValue('pricePeriod', 'one-time', { shouldValidate: true, shouldDirty: true });
+      return;
+    }
+
+    setValue('pricePeriod', 'yearly', { shouldValidate: true, shouldDirty: true });
+  }, [isLandCategory, selectedListingType, setValue]);
+
+  useEffect(() => {
+    if (!selectedPropertyCategory) return;
+
+    if (selectedPropertyCategory === 'building') {
+      if (getValues('bedrooms') == null) {
+        setValue('bedrooms', 1, { shouldValidate: true, shouldDirty: true });
+      }
+
+      if (getValues('bathrooms') == null) {
+        setValue('bathrooms', 1, { shouldValidate: true, shouldDirty: true });
+      }
+
+      setValue('buildingDetails', undefined, { shouldValidate: true, shouldDirty: true });
+      setValue('landDetails', undefined, { shouldValidate: true, shouldDirty: true });
+    } else {
+      setValue('bedrooms', undefined, { shouldValidate: true, shouldDirty: true });
+      setValue('bathrooms', undefined, { shouldValidate: true, shouldDirty: true });
+      setValue('buildingDetails', undefined, { shouldValidate: true, shouldDirty: true });
+      setValue('landDetails', undefined, { shouldValidate: true, shouldDirty: true });
+    }
+
+    if (selectedPropertyCategory === 'land' && selectedPropertyType !== 'land') {
+      setValue('propertyType', 'land', { shouldValidate: true, shouldDirty: true });
+      return;
+    }
+
+    if (selectedPropertyCategory === 'building' && selectedPropertyType === 'land') {
+      setValue('propertyType', defaultBuildingPropertyType, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [selectedPropertyCategory, selectedPropertyType, getValues, setValue, defaultBuildingPropertyType]);
+
+  useEffect(() => {
     if (!onDraftRef.current) return undefined;
 
     const timeoutId = window.setTimeout(() => {
@@ -154,14 +307,12 @@ const ListingForm = ({
   }, [watchedValues]);
 
   const onFormSubmit = (data: ListingFormData) => {
-    const normalizedData = {
-      ...data,
-      bedrooms: isResidential ? (data.bedrooms ?? 0) : 0,
-      bathrooms: isResidential ? (data.bathrooms ?? 0) : 0,
-      serviceCharge: data.serviceCharge ?? 0,
-    };
-
+    const normalizedData = normalizeListingSubmissionData(data);
     onSubmit?.(normalizedData, photos);
+  };
+
+  const onFormError = (formErrors: FieldErrors<ListingFormData>) => {
+    console.error('Listing form validation failed:', formErrors);
   };
 
   return (
@@ -183,7 +334,7 @@ const ListingForm = ({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onFormSubmit, onFormError)} className="space-y-5">
 
         {/* Basic info */}
         <FormSection title="Basic information" icon={FileText}>
@@ -205,15 +356,24 @@ const ListingForm = ({
           </FormField>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Property type" error={errors.propertyType?.message} required>
-              <select {...register('propertyType')} className={inputClass(!!errors.propertyType)}>
-                <option value="">Select type</option>
-                {PROPERTY_TYPES.map((t) => (
-                  <option key={t} value={t}>{capitalize(t)}</option>
-                ))}
+            <FormField label="Property category" error={errors.propertyCategory?.message} required>
+              <select {...register('propertyCategory')} className={inputClass(!!errors.propertyCategory)}>
+                <option value="building">Building</option>
+                <option value="land">Land</option>
               </select>
             </FormField>
 
+            <FormField label="Property type" error={errors.propertyType?.message} required>
+              <select {...register('propertyType')} className={inputClass(!!errors.propertyType)}>
+                {propertyTypeOptions.length > 1 && <option value="">Select type</option>}
+                {propertyTypeOptions.map((t) => (
+                  <option key={t} value={t}>{PROPERTY_TYPE_LABELS[t] ?? capitalize(t)}</option>
+                ))}
+              </select>
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Listing type" error={errors.listingType?.message} required>
               <select {...register('listingType')} className={inputClass(!!errors.listingType)}>
                 {LISTING_TYPES.map((t) => (
@@ -255,10 +415,56 @@ const ListingForm = ({
               className={inputClass(!!errors.estateName)}
             />
           </FormField>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="State" error={errors.state?.message}>
+              <input
+                {...register('state')}
+                placeholder="e.g. Lagos"
+                className={inputClass(!!errors.state)}
+              />
+            </FormField>
+
+            <FormField label="LGA" error={errors.lga?.message}>
+              <input
+                {...register('lga')}
+                placeholder="e.g. Ikeja"
+                className={inputClass(!!errors.lga)}
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Latitude" error={errors.coordinates?.latitude?.message}>
+              <input
+                {...register('coordinates.latitude', { valueAsNumber: true })}
+                type="number"
+                step="any"
+                placeholder="e.g. 6.5244"
+                className={inputClass(!!errors.coordinates?.latitude)}
+              />
+            </FormField>
+            <FormField label="Longitude" error={errors.coordinates?.longitude?.message}>
+              <input
+                {...register('coordinates.longitude', { valueAsNumber: true })}
+                type="number"
+                step="any"
+                placeholder="e.g. 3.3792"
+                className={inputClass(!!errors.coordinates?.longitude)}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Nearby landmark" error={errors.nearbyLandmark?.message}>
+            <input
+              {...register('nearbyLandmark')}
+              placeholder="e.g. Opposite XYZ Mall"
+              className={inputClass(!!errors.nearbyLandmark)}
+            />
+          </FormField>
         </FormSection>
 
         {/* Rooms */}
-        {isResidential && (
+        {isBuildingCategory && (
           <FormSection title="Rooms" icon={BedDouble}>
             <div className="grid grid-cols-2 gap-4">
               <FormField label="Bedrooms" error={errors.bedrooms?.message} required>
@@ -302,7 +508,7 @@ const ListingForm = ({
 
             <FormField label="Price period" error={errors.pricePeriod?.message} required>
               <select {...register('pricePeriod')} className={inputClass(!!errors.pricePeriod)}>
-                {PRICE_PERIODS.map((p) => (
+                {pricePeriodOptions.map((p) => (
                   <option key={p} value={p}>{capitalize(p)}</option>
                 ))}
               </select>
@@ -318,6 +524,14 @@ const ListingForm = ({
             </FormField>
           </div>
         </FormSection>
+
+        {isLandCategory && (
+          <LandDetailsSection register={register} control={control} errors={errors} />
+        )}
+
+        {isBuildingCategory && (
+          <BuildingDetailsSection register={register} control={control} errors={errors} />
+        )}
 
         {/* Features */}
         <FormSection title="Amenities & features" icon={Sparkles}>

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAdminListings, useApproveListing, useRejectListing, useFeatureListing } from '../../hooks/useAdmin';
 import type { IListing, ListingStatus } from '../../types/listing.types';
+import { getListingSummaryMeta } from '../../lib/utils';
 
 type AdminTabStatus = 'all' | ListingStatus;
 type StatusKey = Exclude<AdminTabStatus, 'all'>;
@@ -129,12 +130,18 @@ const ActionRow = ({ listing }: { listing: IListing }) => {
 
 const ListingCard = ({ listing }: { listing: IListing }) => {
   const v = STATUS_VISUALS[listing.status as StatusKey];
+  const summaryMeta = getListingSummaryMeta({
+    propertyCategory: listing.propertyCategory,
+    propertyType: listing.propertyType,
+    bedrooms: listing.bedrooms,
+    bathrooms: listing.bathrooms,
+  });
 
   return (
     <div className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/70" style={{ borderTop: `3px solid ${v.bg}` }}>
       <div className="relative h-48 overflow-hidden">
         <img src={listing.photos[0]} alt={listing.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/0 to-black/0" />
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/55 via-black/0 to-black/0" />
         <div className="absolute left-3 top-3"><TypeBadge listingType={listing.listingType} /></div>
         <div className="absolute right-3 top-3"><StatusPill status={listing.status} /></div>
         {listing.isFeatured && (
@@ -150,16 +157,22 @@ const ListingCard = ({ listing }: { listing: IListing }) => {
         <div>
           <h3 className="line-clamp-1 text-[15px] font-semibold leading-snug text-[#0F172A]">{listing.title}</h3>
           <div className="mt-1.5 flex items-center gap-1 text-xs text-slate-500">
-            <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-[#00C9A7]" />
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-[#00C9A7]" />
             <span className="line-clamp-1">{listing.estateName ? `${listing.estateName}, ` : ''}{listing.areaName}</span>
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
-          <span className="flex items-center gap-1"><Bed className="h-3.5 w-3.5 text-slate-400" />{listing.bedrooms === 0 ? 'Self-con' : `${listing.bedrooms} bed`}</span>
-          <span className="h-3 w-px bg-slate-200" />
-          <span className="flex items-center gap-1"><Bath className="h-3.5 w-3.5 text-slate-400" />{listing.bathrooms} bath</span>
-          <span className="h-3 w-px bg-slate-200" />
-          <span>{capitalize(listing.propertyType)}</span>
+          {summaryMeta.showBedBath ? (
+            <>
+              <span className="flex items-center gap-1"><Bed className="h-3.5 w-3.5 text-slate-400" />{summaryMeta.bedLabel}</span>
+              <span className="h-3 w-px bg-slate-200" />
+              <span className="flex items-center gap-1"><Bath className="h-3.5 w-3.5 text-slate-400" />{summaryMeta.bathLabel}</span>
+              <span className="h-3 w-px bg-slate-200" />
+              <span>{summaryMeta.propertyLabel}</span>
+            </>
+          ) : (
+            <span>{summaryMeta.propertyLabel}</span>
+          )}
         </div>
         <div className="flex items-end justify-between">
           <PriceDisplay price={listing.price} pricePeriod={listing.pricePeriod} />
@@ -168,7 +181,7 @@ const ListingCard = ({ listing }: { listing: IListing }) => {
         <div className="flex items-center justify-between border-t border-slate-100 pt-3">
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0A1628]/5 text-[10px] font-semibold text-[#0A1628]">{listing.agentId ? 'A' : 'O'}</span>
-            <span className="line-clamp-1 max-w-[110px]">{listing.agentId ? 'Agent' : 'Owner'}</span>
+            <span className="line-clamp-1 max-w-27.5">{listing.agentId ? 'Agent' : 'Owner'}</span>
           </div>
           <span className="text-[11px] text-slate-400">{timeAgo(listing.createdAt)}</span>
         </div>
@@ -188,11 +201,17 @@ const ListingRow = ({ listing }: { listing: IListing }) => {
   const v = STATUS_VISUALS[listing.status as StatusKey];
   const { mutate: approve, isPending: isApproving } = useApproveListing();
   const { mutate: feature, isPending: isFeaturing } = useFeatureListing();
+  const summaryMeta = getListingSummaryMeta({
+    propertyCategory: listing.propertyCategory,
+    propertyType: listing.propertyType,
+    bedrooms: listing.bedrooms,
+    bathrooms: listing.bathrooms,
+  });
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200/40 transition-shadow hover:shadow-md hover:shadow-slate-200/60" style={{ borderLeft: `3px solid ${v.bg}` }}>
       <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4">
-        <div className="relative h-20 w-full flex-shrink-0 overflow-hidden rounded-lg sm:h-16 sm:w-24">
+        <div className="relative h-20 w-full shrink-0 overflow-hidden rounded-lg sm:h-16 sm:w-24">
           <img src={listing.photos[0]} alt={listing.title} className="h-full w-full object-cover" />
           {listing.isFeatured && <span className="absolute left-1 top-1 rounded-full bg-[#F59E0B] p-0.5"><Star className="h-2.5 w-2.5 fill-white text-white" /></span>}
         </div>
@@ -203,14 +222,18 @@ const ListingRow = ({ listing }: { listing: IListing }) => {
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
             <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-[#00C9A7]" />{listing.estateName ? `${listing.estateName}, ` : ''}{listing.areaName}</span>
-            <span className="flex items-center gap-1"><Bed className="h-3 w-3" />{listing.bedrooms === 0 ? 'Self-con' : listing.bedrooms}</span>
-            <span className="flex items-center gap-1"><Bath className="h-3 w-3" />{listing.bathrooms}</span>
-            <span>{capitalize(listing.propertyType)}</span>
+            {summaryMeta.showBedBath ? (
+              <>
+                <span className="flex items-center gap-1"><Bed className="h-3 w-3" />{summaryMeta.bedLabel}</span>
+                <span className="flex items-center gap-1"><Bath className="h-3 w-3" />{summaryMeta.bathLabel}</span>
+              </>
+            ) : null}
+            <span>{summaryMeta.propertyLabel}</span>
             <span className="text-slate-400">{listing.agentId ? 'Agent' : 'Owner'}</span>
             <span className="text-slate-400">{timeAgo(listing.createdAt)}</span>
           </div>
         </div>
-        <div className="flex flex-shrink-0 items-center justify-between gap-4 sm:justify-end">
+        <div className="flex shrink-0 items-center justify-between gap-4 sm:justify-end">
           <PriceDisplay price={listing.price} pricePeriod={listing.pricePeriod} />
           <div className="flex items-center gap-1.5">
             {listing.status === 'pending' && (
@@ -283,7 +306,7 @@ export default function AdminListingsPreview() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 bg-[#F8FAFC] p-6">
-      <div className="flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-[#0A1628] to-[#0F172A] p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
+      <div className="flex flex-col gap-4 rounded-3xl bg-linear-to-br from-[#0A1628] to-[#0F172A] p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
         <div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#00C9A7]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#00C9A7]">Admin</span>
           <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">Listing Review</h1>

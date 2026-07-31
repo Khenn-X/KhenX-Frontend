@@ -5,7 +5,7 @@ import ListingPlanPaywall from '../../components/agent/ListingPlanPaywall';
 import { useKYCStatus } from '../../hooks/useKYC';
 import { useCreateListing } from '../../hooks/useListings';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
-import type { ListingFormData } from '../../lib/validators';
+import { normalizeListingSubmissionData, type ListingFormData } from '../../lib/validators';
 import { listingsApi } from '../../api/listings.api';
 import type { CreateListingPayload } from '../../types/listing.types';
 
@@ -66,12 +66,12 @@ const CreateListingPage = () => {
   };
 
   const handleCreateListing = (data: ListingFormData, photos: File[]) => {
+    const sanitizedData = normalizeListingSubmissionData(data);
     const normalizedPayload: CreateListingPayload = {
-      ...data,
-      bedrooms: data.bedrooms ?? 0,
-      bathrooms: data.bathrooms ?? 0,
-      serviceCharge: data.serviceCharge ?? 0,
-      neighbourhoodId: data.neighbourhoodId ?? undefined,
+      ...sanitizedData,
+      propertyCategory: sanitizedData.propertyCategory ?? 'building',
+      serviceCharge: sanitizedData.serviceCharge ?? 0,
+      neighbourhoodId: sanitizedData.neighbourhoodId ?? undefined,
     };
 
     createListing({ payload: normalizedPayload, photos });

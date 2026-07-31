@@ -7,7 +7,12 @@ const ROOM_BASED_PROPERTY_TYPES: PropertyType[] = [
   'self-con',
   'mini-flat',
   'terrace',
-  'detached',
+  'detached_house',
+  'semi_detached',
+  'penthouse',
+  'studio',
+  'office',
+  'shop',
 ];
 
 export const isResidentialPropertyType = (propertyType: PropertyType) =>

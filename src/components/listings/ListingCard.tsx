@@ -23,7 +23,7 @@ import {
 import { TypeBadge } from "./ListingBadge";
 import PriceDisplay from "./PriceDisplay";
 import ImageWithFallback from "../shared/ImageWithFallback";
-import { cn, capitalize, formatNaira } from "../../lib/utils";
+import { cn, capitalize, formatNaira, getListingSummaryMeta } from "../../lib/utils";
 import { getTypeVisual } from "../../types/listingType.config";
 
 // Real area-level scores, looked up by the page from useFeaturedNeighbourhoods and
@@ -36,6 +36,11 @@ interface ListingCardProps {
   className?: string;
   viewMode?: "grid" | "list";
 }
+
+type ListingWithOptionalAgent = IListing & {
+  agent?: { name?: string | null } | null;
+  agentName?: string | null;
+};
 
 export interface ListingIntelligence {
   powerScore?: number | null;
@@ -88,6 +93,12 @@ const ListingCard = ({
       intelligence.floodRisk != null);
 
   const isListView = viewMode === "list";
+  const summaryMeta = getListingSummaryMeta({
+    propertyCategory: listing.propertyCategory,
+    propertyType: listing.propertyType,
+    bedrooms: listing.bedrooms,
+    bathrooms: listing.bathrooms,
+  });
   const typeVisual = getTypeVisual(listing.listingType);
 
   // Grid cards get a top rail (matches the admin review card); list rows get
@@ -97,7 +108,9 @@ const ListingCard = ({
     : { borderTop: `3px solid ${typeVisual.rail}` };
 
   const agentName =
-    (listing as any).agent?.name ?? (listing as any).agentName ?? null;
+    (listing as ListingWithOptionalAgent).agent?.name ??
+    (listing as ListingWithOptionalAgent).agentName ??
+    null;
   const agentInitial = agentName ? agentName.charAt(0).toUpperCase() : null;
 
   return (
@@ -246,17 +259,23 @@ const ListingCard = ({
 
         {/* Bed / bath / type — boxed row, matches the admin card's spec strip */}
         <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
-          <span className="flex items-center gap-1">
-            <Bed className="h-3.5 w-3.5 text-slate-400" />
-            {listing.bedrooms === 0 ? "Self-con" : `${listing.bedrooms} bed`}
-          </span>
-          <span className="h-3 w-px bg-slate-200" />
-          <span className="flex items-center gap-1">
-            <Bath className="h-3.5 w-3.5 text-slate-400" />
-            {listing.bathrooms} bath
-          </span>
-          <span className="h-3 w-px bg-slate-200" />
-          <span>{capitalize(listing.propertyType)}</span>
+          {summaryMeta.showBedBath ? (
+            <>
+              <span className="flex items-center gap-1">
+                <Bed className="h-3.5 w-3.5 text-slate-400" />
+                {summaryMeta.bedLabel}
+              </span>
+              <span className="h-3 w-px bg-slate-200" />
+              <span className="flex items-center gap-1">
+                <Bath className="h-3.5 w-3.5 text-slate-400" />
+                {summaryMeta.bathLabel}
+              </span>
+              <span className="h-3 w-px bg-slate-200" />
+              <span>{summaryMeta.propertyLabel}</span>
+            </>
+          ) : (
+            <span>{summaryMeta.propertyLabel}</span>
+          )}
         </div>
 
         {/* Price + service charge — same pairing as the admin card */}

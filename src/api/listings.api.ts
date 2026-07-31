@@ -63,7 +63,27 @@ export const listingsApi = {
   },
 
   // Agent — edit own listing
-  updateListing: async (id: string, payload: UpdateListingPayload): Promise<ApiResponse<{ listing: IListing }>> => {
+  updateListing: async (id: string, payload: UpdateListingPayload, photos?: File[]): Promise<ApiResponse<{ listing: IListing }>> => {
+    if (photos && photos.length > 0) {
+      const formData = new FormData();
+
+      (Object.keys(payload) as (keyof UpdateListingPayload)[]).forEach((key) => {
+        const value = payload[key];
+        if (key === 'features' && typeof value === 'object') {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== undefined) {
+          formData.append(key, String(value));
+        }
+      });
+
+      photos.forEach((photo) => formData.append('photos', photo));
+
+      const { data } = await api.patch(`/listings/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    }
+
     const { data } = await api.patch(`/listings/${id}`, payload);
     return data;
   },

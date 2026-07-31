@@ -65,8 +65,10 @@ export const useUpdateListing = (id: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: UpdateListingPayload) => listingsApi.updateListing(id, payload),
-    onSuccess: () => {
+    mutationFn: ({ payload, photos }: { payload: UpdateListingPayload; photos?: File[] }) =>
+      listingsApi.updateListing(id, payload, photos),
+    onSuccess: (response) => {
+      queryClient.setQueryData(queryKeys.listings.detail(id), response);
       queryClient.invalidateQueries({ queryKey: queryKeys.listings.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.listings.myListings });
     },
