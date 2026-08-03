@@ -59,11 +59,11 @@ const SuperadminDashboardPage = () => {
 
   const quickActions: QuickAction[] = [
     {
-      label: 'Admin approvals',
-      description: 'New admin requests',
+      label: 'Create admin',
+      description: 'Invite a new admin',
       icon: UserCheck,
       to: ROUTES.SUPERADMIN_ADMIN_REQUESTS,
-      count: stats?.adminApprovals?.pending ?? 0,
+      count: 0,
       accent: 'indigo',
     },
     {

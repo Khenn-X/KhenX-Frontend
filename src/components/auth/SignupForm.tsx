@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Building2, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { signupSchema, type SignupFormData } from '../../lib/validators';
 import { useSignup } from '../../hooks/useAuth';
@@ -120,11 +120,10 @@ const SignupForm = () => {
               <label className="block text-[11px] font-medium text-slate-400 uppercase tracking-[0.4px] mb-1.5">
                 I am a
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: 'seeker', label: 'Seeker', icon: User },
                   { value: 'agent', label: 'Agent', icon: Building2 },
-                  { value: 'admin', label: 'Admin', icon: ShieldCheck },
                 ].map(({ value, label, icon: Icon }) => (
                   <label
                     key={value}
@@ -147,12 +146,6 @@ const SignupForm = () => {
                 ))}
               </div>
             </div>
-
-            {selectedRole === 'admin' && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-700">
-                Admin accounts are reviewed by a superadmin. Your account will remain pending until approved.
-              </div>
-            )}
 
             {/* Full name */}
             <div>

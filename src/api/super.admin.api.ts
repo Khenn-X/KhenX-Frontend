@@ -16,10 +16,22 @@ export interface AdminRequestsData {
   requests: AdminRequest[]; // ← backend sends `requests`, not `admins`
 }
 
+export interface CreateAdminPayload {
+  fullName: string;
+  email: string;
+}
+
 export const superadminApi = {
   /**
-   * GET /api/admin/admin-requests
+   * POST /api/admin/users
    * Backend requires role: superadmin (double-checked via requireRole middleware)
+   */
+  createAdmin: (payload: CreateAdminPayload) =>
+    axios.post<ApiResponse<{ user: { _id: string; fullName: string; email: string; role: 'admin'; adminApprovalStatus: 'approved' } }>>('/admin/users', payload),
+
+  /**
+   * GET /api/admin/admin-requests
+   * Kept for compatibility, but the UI is now direct-create driven.
    */
   getPendingAdmins: () =>
     axios.get<ApiResponse<AdminRequestsData>>('/admin/admin-requests'),

@@ -25,7 +25,7 @@ export interface SignupPayload {
   fullName: string;
   email: string;
   password: string;
-  role?: 'seeker' | 'agent' | 'admin';
+  role?: 'seeker' | 'agent';
 }
 
 export interface LoginPayload {

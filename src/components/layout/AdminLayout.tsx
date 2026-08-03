@@ -25,7 +25,7 @@ const adminNavItems = [
 // Nav items for superadmin — Dashboard points to THEIR route, plus extra item
 const superadminNavItems = [
   { label: 'Dashboard',        to: ROUTES.SUPERADMIN_DASHBOARD,       icon: LayoutDashboard, badgeKey: null },
-  { label: 'Admin Approvals',  to: ROUTES.SUPERADMIN_ADMIN_REQUESTS,  icon: UserCheck,       badgeKey: 'adminApprovals.pending' },
+  { label: 'Create Admin',     to: ROUTES.SUPERADMIN_ADMIN_REQUESTS,  icon: UserCheck,       badgeKey: null },
   { label: 'Neighbourhood Data', to: ROUTES.ADMIN_NEIGHBOURHOODS, icon: MapPin, badgeKey: null },
   { label: 'Listings',         to: ROUTES.ADMIN_LISTINGS,             icon: Building2,       badgeKey: 'listings.pending' },
   { label: 'KYC Verification', to: ROUTES.ADMIN_KYC,                  icon: ShieldCheck,     badgeKey: 'agents.pendingKYC' },
