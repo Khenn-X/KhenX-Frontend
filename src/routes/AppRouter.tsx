@@ -89,6 +89,8 @@ const AdminNeighbourhoodNewPage = lazy(() => import("../pages/admin/AdminNeighbo
 const AdminNeighbourhoodEditPage = lazy(() => import("../pages/admin/AdminNeighbourhoodEditPage"));
 const AdminNeighbourhoodViewPage = lazy(() => import("../pages/admin/AdminNeighbourhoodViewPage"));
 const AdminNeighbourhoodImportPage = lazy(() => import("../pages/admin/AdminNeighbourhoodImportPage"));
+const AdminProfilePage = lazy(() => import("../pages/admin/AdminProfilePage"));
+const AdminSettingsPage = lazy(() => import("../pages/admin/AdminSettingsPage"));
 
 // ── Superadmin ────────────────────────────────────────────────────────────────
 const SuperadminDashboardPage = lazy(
@@ -96,6 +98,12 @@ const SuperadminDashboardPage = lazy(
 );
 const SuperadminAdminRequestsPage = lazy(
   () => import("../pages/superadmin/SuperadminAdminRequestsPage"),
+);
+const SuperadminProfilePage = lazy(
+  () => import("../pages/superadmin/SuperadminProfilePage"),
+);
+const SuperadminSettingsPage = lazy(
+  () => import("../pages/superadmin/SuperadminSettingsPage"),
 );
 
 // ─── Layouts ──────────────────────────────────────────────────────────────────
@@ -493,6 +501,28 @@ const AppRouter = () => {
             </AdminRoute>
           }
         />
+        <Route
+          path="/admin/profile"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <AdminProfilePage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <AdminSettingsPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+
+      
 
         {/* ── SUPERADMIN ────────────────────────────────────────────────── */}
         <Route
@@ -515,6 +545,26 @@ const AppRouter = () => {
             </SuperadminRoute>
           }
         />
+        <Route
+          path="/superadmin/profile"
+          element={
+            <SuperadminRoute>
+              <AdminLayout>
+                <SuperadminProfilePage />
+              </AdminLayout>
+            </SuperadminRoute>
+          }
+        />
+        <Route
+          path="/superadmin/settings"
+          element={
+            <SuperadminRoute>
+              <AdminLayout>
+                <SuperadminSettingsPage />
+              </AdminLayout>
+            </SuperadminRoute>
+          }
+        />  
 
         {/* ── 404 ───────────────────────────────────────────────────────── */}
         <Route

@@ -1,18 +1,33 @@
-import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Building2, Crown, ShieldCheck, UserCheck } from 'lucide-react';
-import { useAdminStats } from '../../hooks/useAdmin';
-import AdminStats from '../../components/admin/AdminStats';
-import LoadingSpinner from '../../components/shared/LoadingSpinner';
-import ErrorMessage from '../../components/shared/ErrorMessage';
-import { ROUTES } from '../../constants/routes';
-import { timeAgo } from '../../lib/utils';
+import { useNavigate } from "react-router-dom";
+import {
+  AlertTriangle,
+  Building2,
+  Crown,
+  ShieldCheck,
+  UserCheck,
+} from "lucide-react";
+import { useAdminStats } from "../../hooks/useAdmin";
+import AdminStats from "../../components/admin/AdminStats";
+import LoadingSpinner from "../../components/shared/LoadingSpinner";
+import ErrorMessage from "../../components/shared/ErrorMessage";
+import { ROUTES } from "../../constants/routes";
+import { timeAgo } from "../../lib/utils";
+// import StatCardWithBadge from '../../components/dashboard/StatCardWithBadge';
+import HeroPromoCard from "../../components/dashboard/HeroPromoCard";
+import BarChartCard from "../../components/dashboard/BarChartCard";
+import AreaChartCard from "../../components/dashboard/AreaChartCard";
+import ActiveUsersStrip from "../../components/dashboard/ActiveUsersStrip";
+import ProjectsTable from "../../components/dashboard/ProjectsTable";
+import ActivityTimelineCard from "../../components/dashboard/ActivityTimelineCard";
 
 /** Unwraps the axios → API-envelope response down to the stats payload. */
 function extractStats(data: unknown): Record<string, any> | null {
-  if (!data || typeof data !== 'object') return null;
+  if (!data || typeof data !== "object") return null;
   const outer = data as Record<string, any>;
   const candidate = outer.data ?? outer;
-  return candidate && typeof candidate === 'object' && 'listings' in candidate ? candidate : null;
+  return candidate && typeof candidate === "object" && "listings" in candidate
+    ? candidate
+    : null;
 }
 
 type QuickAction = {
@@ -24,75 +39,82 @@ type QuickAction = {
   accent: string;
 };
 
-const ACCENTS: Record<string, { bar: string; chip: string; icon: string; dot: string }> = {
+const ACCENTS: Record<
+  string,
+  { bar: string; chip: string; icon: string; dot: string }
+> = {
   indigo: {
-    bar: 'from-indigo-400 to-indigo-500',
-    chip: 'bg-indigo-50',
-    icon: 'text-indigo-600',
-    dot: '#6366F1',
+    bar: "from-indigo-400 to-indigo-500",
+    chip: "bg-indigo-50",
+    icon: "text-indigo-600",
+    dot: "#6366F1",
   },
   teal: {
-    bar: 'from-[#00C9A7] to-[#00E0BA]',
-    chip: 'bg-[#00C9A7]/10',
-    icon: 'text-[#00A88C]',
-    dot: '#00C9A7',
+    bar: "from-[#00C9A7] to-[#00E0BA]",
+    chip: "bg-[#00C9A7]/10",
+    icon: "text-[#00A88C]",
+    dot: "#00C9A7",
   },
   amber: {
-    bar: 'from-amber-400 to-amber-500',
-    chip: 'bg-amber-50',
-    icon: 'text-amber-600',
-    dot: '#F59E0B',
+    bar: "from-amber-400 to-amber-500",
+    chip: "bg-amber-50",
+    icon: "text-amber-600",
+    dot: "#F59E0B",
   },
   rose: {
-    bar: 'from-rose-400 to-rose-500',
-    chip: 'bg-rose-50',
-    icon: 'text-rose-600',
-    dot: '#F43F5E',
+    bar: "from-rose-400 to-rose-500",
+    chip: "bg-rose-50",
+    icon: "text-rose-600",
+    dot: "#F43F5E",
   },
 };
 
 const SuperadminDashboardPage = () => {
-  const { data, isLoading, isError, isFetching, dataUpdatedAt, refetch } = useAdminStats();
+  const { data, isLoading, isError, isFetching, dataUpdatedAt, refetch } =
+    useAdminStats();
   const navigate = useNavigate();
 
   const stats = extractStats(data);
 
   const quickActions: QuickAction[] = [
     {
-      label: 'Create admin',
-      description: 'Invite a new admin',
+      label: "Create admin",
+      description: "Invite a new admin",
       icon: UserCheck,
       to: ROUTES.SUPERADMIN_ADMIN_REQUESTS,
       count: 0,
-      accent: 'indigo',
+      accent: "indigo",
     },
     {
-      label: 'Review listings',
-      description: 'Awaiting approval',
+      label: "Review listings",
+      description: "Awaiting approval",
       icon: Building2,
       to: ROUTES.ADMIN_LISTINGS,
       count: stats?.listings?.pending ?? 0,
-      accent: 'teal',
+      accent: "teal",
     },
     {
-      label: 'Review KYC',
-      description: 'Agent verifications',
+      label: "Review KYC",
+      description: "Agent verifications",
       icon: ShieldCheck,
       to: ROUTES.ADMIN_KYC,
       count: stats?.agents?.pendingKYC ?? 0,
-      accent: 'amber',
+      accent: "amber",
     },
     {
-      label: 'Fraud reports',
-      description: 'Open cases',
+      label: "Fraud reports",
+      description: "Open cases",
       icon: AlertTriangle,
       to: ROUTES.ADMIN_FRAUD,
       count: stats?.fraud?.open ?? 0,
-      accent: 'rose',
+      accent: "rose",
     },
   ];
 
-  const totalPending = quickActions.reduce((sum, action) => sum + action.count, 0);
+  const totalPending = quickActions.reduce(
+    (sum, action) => sum + action.count,
+    0,
+  );
 
   // Build a conic-gradient donut from the real pending counts.
   const donutGradient = (() => {
@@ -106,7 +128,7 @@ const SuperadminDashboardPage = () => {
         cursor += pct;
         return `${ACCENTS[action.accent].dot} ${start}% ${cursor}%`;
       });
-    return `conic-gradient(${segments.join(', ')})`;
+    return `conic-gradient(${segments.join(", ")})`;
   })();
 
   return (
@@ -123,7 +145,9 @@ const SuperadminDashboardPage = () => {
               <Crown className="h-3 w-3" />
               Superadmin
             </span>
-            <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">Dashboard</h1>
+            <h1 className="mt-3 text-2xl font-bold text-white sm:text-3xl">
+              Dashboard
+            </h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-300">
               Full platform overview — including admin account approvals.
             </p>
@@ -133,27 +157,31 @@ const SuperadminDashboardPage = () => {
             <div className="flex flex-col items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-sm sm:items-end">
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
-                  totalPending > 0 ? 'text-amber-300' : 'text-white'
+                  totalPending > 0 ? "text-amber-300" : "text-white"
                 }`}
               >
                 <span className="relative flex h-2 w-2">
                   {isFetching && (
                     <span
                       className={`absolute inline-flex h-full w-full animate-ping rounded-full ${
-                        totalPending > 0 ? 'bg-amber-400' : 'bg-[#00C9A7]'
+                        totalPending > 0 ? "bg-amber-400" : "bg-[#00C9A7]"
                       } opacity-75`}
                     />
                   )}
                   <span
                     className={`relative inline-flex h-2 w-2 rounded-full ${
-                      totalPending > 0 ? 'bg-amber-400' : 'bg-[#00C9A7]'
+                      totalPending > 0 ? "bg-amber-400" : "bg-[#00C9A7]"
                     }`}
                   />
                 </span>
-                {totalPending > 0 ? `${totalPending} items need attention` : 'All caught up'}
+                {totalPending > 0
+                  ? `${totalPending} items need attention`
+                  : "All caught up"}
               </span>
               <span className="text-[11px] text-slate-400">
-                {dataUpdatedAt ? `Updated ${timeAgo(new Date(dataUpdatedAt).toISOString())}` : 'Live'}
+                {dataUpdatedAt
+                  ? `Updated ${timeAgo(new Date(dataUpdatedAt).toISOString())}`
+                  : "Live"}
               </span>
             </div>
           )}
@@ -164,12 +192,15 @@ const SuperadminDashboardPage = () => {
       {isError && <ErrorMessage onRetry={refetch} />}
 
       {!isLoading && !isError && !stats && (
-        <ErrorMessage message="Couldn't read stats from the server response." onRetry={refetch} />
+        <ErrorMessage
+          message="Couldn't read stats from the server response."
+          onRetry={refetch}
+        />
       )}
 
       {!isLoading && !isError && stats && (
         <>
-          {/* Platform stats */}
+          {/* ── Platform stats (existing, kept) ── */}
           <section>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
               Platform overview
@@ -177,73 +208,131 @@ const SuperadminDashboardPage = () => {
             <AdminStats stats={stats} />
           </section>
 
-          {/* Bento grid: quick actions + review breakdown */}
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {/* Quick action cards — 4 items now, so 2x2 on desktop within the 2/3 column */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-2">
-              {quickActions.map(({ label, description, icon: Icon, to, count, accent }) => {
-                const a = ACCENTS[accent];
-                const urgent = count > 0;
-                return (
-                  <button
-                    key={to}
-                    type="button"
-                    onClick={() => navigate(to)}
-                    className="group relative flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm shadow-slate-200/60 transition-all hover:-translate-y-0.5 hover:shadow-lg"
-                  >
-                    <span
-                      className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${urgent ? a.bar : 'from-slate-200 to-slate-200'}`}
-                    />
-                    <div className="flex items-start justify-between">
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${urgent ? a.chip : 'bg-slate-50'}`}>
-                        <Icon className={`h-5 w-5 ${urgent ? a.icon : 'text-slate-400'}`} />
+              {quickActions.map(
+                ({ label, description, icon: Icon, to, count, accent }) => {
+                  const a = ACCENTS[accent];
+                  const urgent = count > 0;
+                  return (
+                    <button
+                      key={to}
+                      type="button"
+                      onClick={() => navigate(to)}
+                      className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm shadow-slate-200/60 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                    >
+                      <span
+                        className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${urgent ? a.bar : "from-slate-200 to-slate-200"}`}
+                      />
+                      <div className="flex items-start justify-between">
+                        <div
+                          className={`flex h-9 w-9 items-center justify-center rounded-xl ${urgent ? a.chip : "bg-slate-50"}`}
+                        >
+                          <Icon
+                            className={`h-4 w-4 ${urgent ? a.icon : "text-slate-400"}`}
+                          />
+                        </div>
+                        <span
+                          className={`text-2xl font-bold tracking-tight ${urgent ? "text-[#0F172A]" : "text-slate-300"}`}
+                        >
+                          {count}
+                        </span>
                       </div>
-                      <span className={`text-3xl font-bold tracking-tight ${urgent ? 'text-[#0F172A]' : 'text-slate-300'}`}>
-                        {count}
+                      <p className="mt-3 text-sm font-semibold text-[#0F172A]">
+                        {label}
+                      </p>
+                      <p className="text-xs text-slate-400">{description}</p>
+                      <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition-colors group-hover:text-[#00A88C]">
+                        Review now
+                        <svg
+                          className="h-3 w-3 transition-transform group-hover:translate-x-0.5"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            d="M7 4l6 6-6 6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
                       </span>
-                    </div>
-                    <p className="mt-4 text-sm font-semibold text-[#0F172A]">{label}</p>
-                    <p className="text-xs text-slate-400">{description}</p>
-                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition-colors group-hover:text-[#00A88C]">
-                      Review now
-                      <svg className="h-3 w-3 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M7 4l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                },
+              )}
             </div>
 
-            {/* Review breakdown donut */}
-            <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm shadow-slate-200/60">
-              <h3 className="mb-4 self-start text-sm font-semibold uppercase tracking-wide text-slate-400">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm shadow-slate-200/60">
+              <h3 className="mb-3 self-start text-sm font-semibold uppercase tracking-wide text-slate-400">
                 Review breakdown
               </h3>
-
               <div
-                className="relative flex h-36 w-36 items-center justify-center rounded-full"
-                style={{ background: donutGradient ?? '#F1F5F9' }}
+                className="relative flex h-28 w-28 items-center justify-center rounded-full"
+                style={{ background: donutGradient ?? "#F1F5F9" }}
               >
-                <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-white">
-                  <span className="text-2xl font-bold text-[#0F172A]">{totalPending}</span>
-                  <span className="text-[11px] text-slate-400">pending</span>
+                <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full bg-white">
+                  <span className="text-xl font-bold text-[#0F172A]">
+                    {totalPending}
+                  </span>
+                  <span className="text-[10px] text-slate-400">pending</span>
                 </div>
               </div>
-
-              <div className="mt-5 w-full space-y-2">
+              <div className="mt-4 w-full space-y-1.5">
                 {quickActions.map(({ label, count, accent }) => (
-                  <div key={label} className="flex items-center justify-between text-xs">
+                  <div
+                    key={label}
+                    className="flex items-center justify-between text-xs"
+                  >
                     <span className="flex items-center gap-2 text-slate-500">
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: ACCENTS[accent].dot }} />
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: ACCENTS[accent].dot }}
+                      />
                       {label}
                     </span>
-                    <span className="font-semibold text-[#0F172A]">{count}</span>
+                    <span className="font-semibold text-[#0F172A]">
+                      {count}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
           </section>
+
+          {/* ── Hero promo cards ── */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <HeroPromoCard
+              eyebrow="Platform health"
+              title="KhenX Admin Console"
+              description="Full visibility across listings, agents, and fraud reports in one place."
+              variant="light"
+            />
+            <HeroPromoCard
+              eyebrow="Superadmin"
+              title="Manage Admins"
+              description="Approve new admin accounts and control platform-wide access."
+              variant="dark"
+            />
+          </div>
+
+          {/* ── Charts ── */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <BarChartCard />
+            <AreaChartCard />
+          </div>
+
+          {/* ── Active users strip ── */}
+          <ActiveUsersStrip />
+
+          {/* ── Projects + activity ── */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <ProjectsTable />
+            </div>
+            <ActivityTimelineCard />
+          </div>
         </>
       )}
     </div>

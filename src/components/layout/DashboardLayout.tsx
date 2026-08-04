@@ -7,7 +7,7 @@ import {
   User,
   LogOut,
   ChevronLeft,
-  ChevronRight,
+  // ChevronRight,
   Menu,
   Bell,
 } from "lucide-react";
@@ -37,11 +37,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const currentPage = agentNavItems.find((item) => item.to === location.pathname);
+  const currentPage = agentNavItems.find(
+    (item) => item.to === location.pathname,
+  );
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
-
       {/* ── Mobile backdrop ──────────────────────────────────────────── */}
       {isSidebarOpen && (
         <div
@@ -54,16 +55,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* ── Sidebar ──────────────────────────────────────────────────── */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex flex-col bg-white border-r border-slate-200/80 transition-all duration-300 ease-in-out",
-          // Desktop: collapsible width. Mobile: slide in/out entirely.
-          isSidebarOpen ? "w-60 translate-x-0" : "w-60 -translate-x-full lg:w-16 lg:translate-x-0"
+          "fixed inset-y-3 left-3 z-40 flex flex-col rounded-3xl bg-[#002948] shadow-xl shadow-slate-900/10 transition-all duration-300 ease-in-out",
+          isSidebarOpen
+            ? "w-60 translate-x-0"
+            : "w-60 -translate-x-[110%] lg:w-20 lg:translate-x-0",
         )}
       >
         {/* Logo */}
         <div
           className={cn(
-            "flex items-center h-16 border-b border-slate-100 shrink-0 overflow-hidden",
-            isSidebarOpen ? "px-4" : "justify-center px-0"
+            "flex items-center h-16 shrink-0 overflow-hidden",
+            isSidebarOpen ? "px-5" : "justify-center px-0",
           )}
         >
           <button
@@ -76,21 +78,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               alt="KhenX"
               className={cn(
                 "shrink-0 object-contain transition-all duration-300",
-                isSidebarOpen ? "h-8 w-auto object-left" : "h-8 w-8 object-cover object-left rounded-md"
+                isSidebarOpen
+                  ? "h-8 w-auto object-left"
+                  : "h-8 w-8 object-cover object-left rounded-md",
               )}
             />
             {isSidebarOpen && (
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide truncate">
+              <span className="text-[10px] font-semibold text-white/50 uppercase tracking-wide truncate">
                 Agent Portal
               </span>
             )}
           </button>
         </div>
 
+        <div className="mx-5 h-px bg-white/10" />
+
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           {isSidebarOpen && (
-            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 select-none">
+            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/30 select-none">
               Menu
             </p>
           )}
@@ -104,31 +110,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   "group relative flex items-center rounded-xl text-sm font-medium transition-all duration-150",
                   isSidebarOpen ? "gap-3 px-3 py-2.5" : "justify-center p-2.5",
                   isActive
-                    ? "bg-[#00C9A7]/10 text-[#00A88C]"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
+                    ? "bg-[#006A61] text-white shadow-sm"
+                    : "text-white/50 hover:bg-white/5 hover:text-white",
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-full bg-[#00C9A7]" />
-                  )}
                   <span
                     className={cn(
                       "flex items-center justify-center w-7 h-7 rounded-lg shrink-0 transition-all",
                       isActive
-                        ? "bg-[#00C9A7]/15 text-[#00A88C]"
-                        : "text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600"
+                        ? "text-white"
+                        : "text-white/40 group-hover:text-white/80",
                     )}
                   >
                     <Icon className="h-4 w-4" />
                   </span>
                   {isSidebarOpen && (
-                    <>
-                      <span className="flex-1 truncate">{label}</span>
-                      <ChevronRight className="h-3.5 w-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </>
+                    <span className="flex-1 truncate">{label}</span>
                   )}
                 </>
               )}
@@ -137,15 +137,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </nav>
 
         {/* User + Logout + Collapse */}
-        <div className="shrink-0 border-t border-slate-100 p-3 space-y-1">
+        <div className="shrink-0 p-3 space-y-1">
           {isSidebarOpen && user && (
-            <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-slate-50 mb-1">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#00C9A7] to-[#00A88C] text-xs font-bold text-white shadow-sm">
+            <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/5 mb-1">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#006A61] text-xs font-bold text-white">
                 {getInitials(user.fullName)}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-[#0F172A] truncate leading-none">{user.fullName}</p>
-                <p className="text-[10px] text-slate-400 capitalize mt-0.5">{user.role}</p>
+                <p className="text-xs font-semibold text-white truncate leading-none">
+                  {user.fullName}
+                </p>
+                <p className="text-[10px] text-white/40 capitalize mt-0.5">
+                  {user.role}
+                </p>
               </div>
             </div>
           )}
@@ -157,27 +161,35 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             className={cn(
               "flex w-full items-center rounded-xl text-sm font-medium transition-colors",
               isSidebarOpen ? "gap-3 px-3 py-2" : "justify-center p-2.5",
-              "text-red-400/80 hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+              "text-red-300/70 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-50",
             )}
           >
             <span className="flex items-center justify-center w-7 h-7 rounded-lg shrink-0">
               <LogOut className="h-4 w-4" />
             </span>
-            {isSidebarOpen && <span className="text-xs">{isLoggingOut ? "Logging out…" : "Log out"}</span>}
+            {isSidebarOpen && (
+              <span className="text-xs">
+                {isLoggingOut ? "Logging out…" : "Log out"}
+              </span>
+            )}
           </button>
 
-          {/* Collapse toggle — desktop only, sidebar always full-width on mobile */}
           <button
             onClick={toggleSidebar}
             title={isSidebarOpen ? "Collapse" : "Expand"}
             className={cn(
               "hidden lg:flex w-full items-center rounded-xl text-xs font-medium transition-colors",
               isSidebarOpen ? "gap-3 px-3 py-2" : "justify-center p-2.5",
-              "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              "text-white/40 hover:bg-white/5 hover:text-white/80",
             )}
           >
             <span className="flex items-center justify-center w-7 h-7 rounded-lg shrink-0">
-              <ChevronLeft className={cn("h-4 w-4 transition-transform duration-300", !isSidebarOpen && "rotate-180")} />
+              <ChevronLeft
+                className={cn(
+                  "h-4 w-4 transition-transform duration-300",
+                  !isSidebarOpen && "rotate-180",
+                )}
+              />
             </span>
             {isSidebarOpen && <span>Collapse</span>}
           </button>
@@ -185,12 +197,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </aside>
 
       {/* ── Main Content ─────────────────────────────────────────────── */}
-      <main
-        className={cn(
-          "flex-1 min-w-0 transition-all duration-300 ease-in-out",
-          isSidebarOpen ? "lg:ml-60" : "lg:ml-16"
-        )}
-      >
+     <main
+  className={cn(
+    "flex-1 min-w-0 transition-all duration-300 ease-in-out",
+    isSidebarOpen ? "lg:ml-[15.5rem]" : "lg:ml-[6.5rem]"
+  )}
+>
         {/* Top bar */}
         <div className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 px-4 sm:px-6 bg-[#F8FAFC]/90 backdrop-blur-sm border-b border-slate-200/80 shadow-sm shadow-slate-200/50">
           <div className="flex items-center gap-3 min-w-0">
@@ -208,7 +220,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <p className="text-sm font-semibold text-[#0F172A] truncate">
                 {currentPage?.label ?? "Dashboard"}
               </p>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Agent Portal</p>
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                Agent Portal
+              </p>
             </div>
           </div>
 
@@ -224,8 +238,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {user && (
               <div className="flex items-center gap-3">
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium text-[#0F172A] leading-none">{user.fullName}</p>
-                  <p className="text-xs text-slate-400 capitalize mt-0.5">{user.role} account</p>
+                  <p className="text-sm font-medium text-[#0F172A] leading-none">
+                    {user.fullName}
+                  </p>
+                  <p className="text-xs text-slate-400 capitalize mt-0.5">
+                    {user.role} account
+                  </p>
                 </div>
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#00C9A7] to-[#00A88C] text-sm font-bold text-white shadow-sm">
                   {getInitials(user.fullName)}

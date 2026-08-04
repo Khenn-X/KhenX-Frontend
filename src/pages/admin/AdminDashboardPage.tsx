@@ -6,6 +6,12 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorMessage from '../../components/shared/ErrorMessage';
 import { ROUTES } from '../../constants/routes';
 import { timeAgo } from '../../lib/utils';
+import HeroPromoCard from '../../components/dashboard/HeroPromoCard';
+import BarChartCard from '../../components/dashboard/BarChartCard';
+import AreaChartCard from '../../components/dashboard/AreaChartCard';
+import ActiveUsersStrip from '../../components/dashboard/ActiveUsersStrip';
+import ProjectsTable from '../../components/dashboard/ProjectsTable';
+import ActivityTimelineCard from '../../components/dashboard/ActivityTimelineCard';
 
 /** Unwraps the axios → API-envelope response down to the stats payload. */
 function extractStats(data: unknown): Record<string, any> | null {
@@ -102,7 +108,6 @@ const AdminDashboardPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0A1628] to-[#0F172A] p-6 sm:p-8">
-        {/* Decorative glow orbs */}
         <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#00C9A7]/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 left-1/3 h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl" />
 
@@ -158,7 +163,7 @@ const AdminDashboardPage = () => {
 
       {!isLoading && !isError && stats && (
         <>
-          {/* Platform stats */}
+          {/* ── Platform overview + quick actions/donut (existing, kept first) ── */}
           <section>
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
               Platform overview
@@ -166,9 +171,7 @@ const AdminDashboardPage = () => {
             <AdminStats stats={stats} />
           </section>
 
-          {/* Bento grid: quick actions + review breakdown */}
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {/* Quick action cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-2">
               {quickActions.map(({ label, description, icon: Icon, to, count, accent }) => {
                 const a = ACCENTS[accent];
@@ -178,23 +181,22 @@ const AdminDashboardPage = () => {
                     key={to}
                     type="button"
                     onClick={() => navigate(to)}
-                    className="group relative flex flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm shadow-slate-200/60 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm shadow-slate-200/60 transition-all hover:-translate-y-0.5 hover:shadow-lg"
                   >
-                    {/* Accent strip */}
                     <span
                       className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${urgent ? a.bar : 'from-slate-200 to-slate-200'}`}
                     />
                     <div className="flex items-start justify-between">
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${urgent ? a.chip : 'bg-slate-50'}`}>
-                        <Icon className={`h-5 w-5 ${urgent ? a.icon : 'text-slate-400'}`} />
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${urgent ? a.chip : 'bg-slate-50'}`}>
+                        <Icon className={`h-4 w-4 ${urgent ? a.icon : 'text-slate-400'}`} />
                       </div>
-                      <span className={`text-3xl font-bold tracking-tight ${urgent ? 'text-[#0F172A]' : 'text-slate-300'}`}>
+                      <span className={`text-2xl font-bold tracking-tight ${urgent ? 'text-[#0F172A]' : 'text-slate-300'}`}>
                         {count}
                       </span>
                     </div>
-                    <p className="mt-4 text-sm font-semibold text-[#0F172A]">{label}</p>
+                    <p className="mt-3 text-sm font-semibold text-[#0F172A]">{label}</p>
                     <p className="text-xs text-slate-400">{description}</p>
-                    <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition-colors group-hover:text-[#00A88C]">
+                    <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition-colors group-hover:text-[#00A88C]">
                       Review now
                       <svg className="h-3 w-3 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M7 4l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
@@ -205,23 +207,22 @@ const AdminDashboardPage = () => {
               })}
             </div>
 
-            {/* Review breakdown donut */}
-            <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm shadow-slate-200/60">
-              <h3 className="mb-4 self-start text-sm font-semibold uppercase tracking-wide text-slate-400">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm shadow-slate-200/60">
+              <h3 className="mb-3 self-start text-sm font-semibold uppercase tracking-wide text-slate-400">
                 Review breakdown
               </h3>
 
               <div
-                className="relative flex h-36 w-36 items-center justify-center rounded-full"
+                className="relative flex h-28 w-28 items-center justify-center rounded-full"
                 style={{ background: donutGradient ?? '#F1F5F9' }}
               >
-                <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-white">
-                  <span className="text-2xl font-bold text-[#0F172A]">{totalPending}</span>
-                  <span className="text-[11px] text-slate-400">pending</span>
+                <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full bg-white">
+                  <span className="text-xl font-bold text-[#0F172A]">{totalPending}</span>
+                  <span className="text-[10px] text-slate-400">pending</span>
                 </div>
               </div>
 
-              <div className="mt-5 w-full space-y-2">
+              <div className="mt-4 w-full space-y-1.5">
                 {quickActions.map(({ label, count, accent }) => (
                   <div key={label} className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-2 text-slate-500">
@@ -237,6 +238,39 @@ const AdminDashboardPage = () => {
               </div>
             </div>
           </section>
+
+          {/* ── NEW: hero promo cards ── */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <HeroPromoCard
+              eyebrow="Platform health"
+              title="KhenX Admin Console"
+              description="Full visibility across listings, agents, and fraud reports in one place."
+              variant="light"
+            />
+            <HeroPromoCard
+              eyebrow="Admin"
+              title="Review Queue"
+              description="Stay on top of listings, KYC, and fraud reports as they come in."
+              variant="dark"
+            />
+          </div>
+
+          {/* ── NEW: charts ── */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <BarChartCard />
+            <AreaChartCard />
+          </div>
+
+          {/* ── NEW: active users strip ── */}
+          <ActiveUsersStrip />
+
+          {/* ── NEW: projects + activity ── */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <ProjectsTable />
+            </div>
+            <ActivityTimelineCard />
+          </div>
         </>
       )}
     </div>
