@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import background from '../../assets/living2.jfif';
+import IntelligenceChat from '../neighbourhood/IntelligenceChat';
 
 export const NextGenSearch: React.FC = () => {
   return (
@@ -73,53 +74,10 @@ export const NextGenSearch: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Side - Terminal Demo */}
+          {/* Right Side - Live AI Intelligence Chat */}
           <div className="lg:flex justify-center">
-            <div className="w-full max-w-md bg-[#0B2138] rounded-2xl overflow-hidden shadow-2xl p-6">
-              {/* Window dots */}
-              <div className="flex gap-2 mb-6">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-              </div>
-
-              {/* Search Query Bubble */}
-              <div className="bg-[#1B3A56] rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%] mb-4">
-                <p className="text-white text-sm leading-relaxed">
-                  Show me 2-bedroom flats in Lekki with high security and zero flood history.
-                </p>
-              </div>
-
-              {/* Result Card */}
-              <div className="bg-gradient-to-br from-[#0F9D8D] to-[#0C7C70] rounded-xl p-4 ml-auto w-[82%] shadow-lg mb-6">
-                <p className="text-white font-bold text-sm mb-3">
-                  KhenX Agent Found 3 Matches
-                </p>
-
-                <p className="text-teal-100 text-[10px] font-semibold uppercase tracking-wide mb-1">
-                  Top Match
-                </p>
-                <p className="text-white font-bold text-base mb-2">
-                  Richmond Gate Estate -
-                </p>
-                <p className="text-white text-sm mb-1">
-                  Score: 9.4/10
-                </p>
-                <div className="flex gap-4 text-xs text-teal-100">
-                  <span>Power: 9.1</span>
-                  <span>Security: 9.6</span>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="border-t border-white/10 pt-4 flex items-center justify-between">
-                <p className="text-gray-500 text-xs">
-                  Processing verified intelligence...
-                </p>
-                <button className="bg-white text-gray-900 font-semibold py-2 px-5 rounded-lg hover:bg-gray-100 transition-colors text-sm">
-                  Try Search
-                </button>
-              </div>
+            <div className="w-full max-w-[32rem]">
+              <IntelligenceChat />
             </div>
           </div>
         </div>

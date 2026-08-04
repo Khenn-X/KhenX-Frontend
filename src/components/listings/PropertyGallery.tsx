@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 interface PropertyGalleryProps {
   photos: string[];
@@ -30,6 +30,7 @@ const ChevronRight = () => (
 const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGalleryProps) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartX = useRef<number | null>(null);
 
   const hasPhotos = photos && photos.length > 0;
   const gridPhotos = photos.slice(1, 5); // up to 4 secondary photos
@@ -65,9 +66,23 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
     };
   }, [lightboxOpen, prev, next]);
 
+  // Touch swipe navigation for the lightbox (mobile)
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartX.current;
+    const SWIPE_THRESHOLD = 45;
+    if (diff > SWIPE_THRESHOLD) prev();
+    else if (diff < -SWIPE_THRESHOLD) next();
+    touchStartX.current = null;
+  };
+
   if (!hasPhotos) {
     return (
       <div
+        className="khenx-gallery-empty"
         style={{
           borderRadius: 18,
           height: 460,
@@ -89,6 +104,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
       <div className="khenx-gallery">
         {/* Hero image — full width on top */}
         <div
+          className="khenx-gallery-hero"
           onClick={() => openLightbox(0)}
           style={{
             position: "relative",
@@ -114,7 +130,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
               pointerEvents: "none",
             }}
           />
-          <div style={{ position: "absolute", top: 16, left: 16, display: "flex", gap: 8 }}>
+          <div className="khenx-gallery-badges" style={{ position: "absolute", top: 16, left: 16, display: "flex", gap: 8, flexWrap: "wrap", maxWidth: "calc(100% - 32px)" }}>
             {isVerified && (
               <span
                 style={{
@@ -128,6 +144,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
                   alignItems: "center",
                   gap: 5,
                   letterSpacing: "0.3px",
+                  whiteSpace: "nowrap",
                 }}
               >
                 <VerifiedBadge /> Verified Listing
@@ -143,6 +160,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
                   padding: "5px 12px",
                   fontSize: 10,
                   fontWeight: 700,
+                  whiteSpace: "nowrap",
                 }}
               >
                 ✦ Featured
@@ -212,6 +230,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
       {photos.length > 1 && (
         <button
           onClick={() => openLightbox(0)}
+          className="khenx-gallery-view-all"
           style={{
             marginTop: 10,
             display: "inline-flex",
@@ -236,6 +255,8 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
         <div
           role="dialog"
           aria-modal="true"
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
           style={{
             position: "fixed",
             inset: 0,
@@ -244,11 +265,13 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            touchAction: "pan-y",
           }}
         >
           <button
             onClick={() => setLightboxOpen(false)}
             aria-label="Close"
+            className="khenx-lightbox-close"
             style={{
               position: "absolute",
               top: 20,
@@ -263,6 +286,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              flexShrink: 0,
             }}
           >
             <X />
@@ -272,6 +296,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
             <button
               onClick={prev}
               aria-label="Previous photo"
+              className="khenx-lightbox-nav khenx-lightbox-prev"
               style={{
                 position: "absolute",
                 left: 20,
@@ -287,6 +312,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                flexShrink: 0,
               }}
             >
               <ChevronLeft />
@@ -296,6 +322,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
           <img
             src={photos[activeIndex]}
             alt={`${title} photo ${activeIndex + 1}`}
+            className="khenx-lightbox-img"
             style={{ maxHeight: "85vh", maxWidth: "88vw", objectFit: "contain", borderRadius: 10 }}
           />
 
@@ -303,6 +330,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
             <button
               onClick={next}
               aria-label="Next photo"
+              className="khenx-lightbox-nav khenx-lightbox-next"
               style={{
                 position: "absolute",
                 right: 20,
@@ -318,6 +346,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                flexShrink: 0,
               }}
             >
               <ChevronRight />
@@ -325,6 +354,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
           )}
 
           <span
+            className="khenx-lightbox-counter"
             style={{
               position: "absolute",
               bottom: 24,
@@ -336,6 +366,7 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
               padding: "6px 16px",
               fontSize: 12.5,
               fontWeight: 600,
+              whiteSpace: "nowrap",
             }}
           >
             {activeIndex + 1} / {photos.length}
@@ -350,12 +381,57 @@ const PropertyGallery = ({ photos, title, isFeatured, isVerified }: PropertyGall
           gap: 8px;
           margin-top: 8px;
         }
+
+        /* ── Tablet ──────────────────────────────────────────────────────── */
         @media (max-width: 860px) {
-          .khenx-gallery > div:first-child {
-            height: 280px;
+          .khenx-gallery-hero {
+            height: 280px !important;
           }
           .khenx-gallery-row {
             grid-template-columns: repeat(2, 1fr);
+          }
+          .khenx-lightbox-nav {
+            width: 38px !important;
+            height: 38px !important;
+          }
+          .khenx-lightbox-prev { left: 10px !important; }
+          .khenx-lightbox-next { right: 10px !important; }
+          .khenx-lightbox-close {
+            top: 12px !important;
+            right: 12px !important;
+            width: 36px !important;
+            height: 36px !important;
+          }
+        }
+
+        /* ── Phones ──────────────────────────────────────────────────────── */
+        @media (max-width: 480px) {
+          .khenx-gallery-hero {
+            height: 220px !important;
+            border-radius: 14px !important;
+          }
+          .khenx-gallery-empty {
+            height: 220px !important;
+          }
+          .khenx-gallery-row {
+            gap: 6px !important;
+          }
+          .khenx-gallery-badges span {
+            font-size: 9px !important;
+            padding: 4px 9px !important;
+          }
+          .khenx-gallery-view-all {
+            width: 100%;
+            justify-content: center;
+          }
+          .khenx-lightbox-img {
+            max-width: 94vw !important;
+            max-height: 72vh !important;
+          }
+          .khenx-lightbox-counter {
+            bottom: max(16px, env(safe-area-inset-bottom)) !important;
+            font-size: 11.5px !important;
+            padding: 5px 13px !important;
           }
         }
       `}</style>

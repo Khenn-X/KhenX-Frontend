@@ -235,9 +235,9 @@ const LandDetailsDisplay = ({ listing }: LandDetailsDisplayProps) => {
               <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 8 }}>{formatLabel(category)}</div>
               <div style={{ display: "grid", gap: 8 }}>
                 {(items ?? []).map((item, index) => (
-                  <div key={`${category}-${index}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, borderRadius: 10, padding: "10px 12px", background: "#F8FAFC", border: "1px solid #F1F5F9" }}>
-                    <span style={{ fontSize: 13, color: "#0F172A", fontWeight: 600 }}>{item.name || "Unnamed place"}</span>
-                    <span style={{ fontSize: 12, color: "#64748B" }}>{item.distanceKm != null ? `${item.distanceKm.toFixed(1)} km` : "—"}</span>
+                  <div key={`${category}-${index}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, borderRadius: 10, padding: "10px 12px", background: "#F8FAFC", border: "1px solid #F1F5F9" }}>
+                    <span style={{ fontSize: 13, color: "#0F172A", fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name || "Unnamed place"}</span>
+                    <span style={{ fontSize: 12, color: "#64748B", flexShrink: 0 }}>{item.distanceKm != null ? `${item.distanceKm.toFixed(1)} km` : "—"}</span>
                   </div>
                 ))}
               </div>

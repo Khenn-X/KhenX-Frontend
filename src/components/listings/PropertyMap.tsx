@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MapContainer, TileLayer, Marker, Circle, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -32,8 +33,14 @@ const PropertyMap = ({ areaName, latitude, longitude, radiusMeters = 900 }: Prop
   const hasCoords = typeof latitude === "number" && typeof longitude === "number";
   const center: [number, number] = hasCoords ? [latitude!, longitude!] : LAGOS_FALLBACK;
 
+  // On touch devices, a one-finger drag on the map would otherwise hijack the
+  // page's scroll gesture. Require a tap to "activate" the map first — the
+  // overlay below only renders/intercepts touches on coarse-pointer devices
+  // (see CSS), so desktop/mouse users are unaffected.
+  const [mapActive, setMapActive] = useState(false);
+
   return (
-    <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid #E2E8F0", position: "relative" }}>
+    <div className="khenx-map-wrap" style={{ borderRadius: 18, overflow: "hidden", border: "1px solid #E2E8F0", position: "relative" }}>
       <MapContainer
         center={center}
         zoom={hasCoords ? 15 : 12}
@@ -54,6 +61,40 @@ const PropertyMap = ({ areaName, latitude, longitude, radiusMeters = 900 }: Prop
         </Marker>
       </MapContainer>
 
+      {!mapActive && (
+        <div
+          className="khenx-map-tap-overlay"
+          role="button"
+          aria-label="Tap to interact with map"
+          onClick={() => setMapActive(true)}
+          onTouchStart={() => setMapActive(true)}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 4,
+            cursor: "pointer",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(15,23,42,0.12)",
+          }}
+        >
+          <span
+            style={{
+              background: "rgba(15,23,42,0.8)",
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "8px 16px",
+              borderRadius: 20,
+              backdropFilter: "blur(4px)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Tap to interact with map
+          </span>
+        </div>
+      )}
+
       {!hasCoords && (
         <div
           style={{
@@ -67,11 +108,30 @@ const PropertyMap = ({ areaName, latitude, longitude, radiusMeters = 900 }: Prop
             borderRadius: 8,
             padding: "6px 10px",
             backdropFilter: "blur(4px)",
+            zIndex: 6,
           }}
         >
           Showing approximate area — exact coordinates not yet set for this listing.
         </div>
       )}
+
+      <style>{`
+        .khenx-map-tap-overlay {
+          display: none;
+        }
+        /* Only intercept the first touch on touch/coarse-pointer devices —
+           mouse users can drag the map immediately without an extra click. */
+        @media (pointer: coarse) {
+          .khenx-map-tap-overlay {
+            display: flex;
+          }
+        }
+        @media (max-width: 480px) {
+          .khenx-map-wrap .leaflet-container {
+            height: 220px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

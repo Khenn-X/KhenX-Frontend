@@ -26,7 +26,6 @@ import { useNeighbourhood } from "../../hooks/useNeighbourhood";
 import type { RentBucketKey, RentBucketResolution, RentSummary } from "../../types/neighbourhood.types";
 import WaitlistForm from "../../components/neighbourhood/WaitlistForm";
 import ResidentReportForm from "../../components/neighbourhood/ResidentReportForm";
-import IntelligenceChat from "../../components/neighbourhood/IntelligenceChat";
 import NeighbourhoodImageGallery from "../../components/neighbourhood/NeighbourhoodImageGallery";
 import { IntelligenceSummaryDisplay } from "../../components/neighbourhood/IntelligenceSummaryDisplay";
 import PageWrapper from "../../components/layout/PageWrapper";
@@ -537,15 +536,10 @@ export default function NeighbourhoodDetailPage() {
             live listings — all from one chat.
           </p>
 
-          {/* ── Intelligence Chat (replaces TalkToAdvisor) ──────────────── */}
+          {/* ── Intelligence Suite content ───────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* LEFT — the chat */}
-            <div className="flex flex-col">
-              <IntelligenceChat areaName={area.areaName} />
-            </div>
-
-            {/* RIGHT — Compare + Recommendations (unchanged) */}
-            <div className="space-y-6">
+            {/* Compare + Recommendations (full-width card stack) */}
+            <div className="space-y-6 lg:col-span-2">
               {/* Compare Areas */}
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">

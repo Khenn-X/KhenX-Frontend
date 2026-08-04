@@ -58,6 +58,7 @@ export const AccordionSection = ({
     <button
       onClick={() => onToggle(id)}
       aria-expanded={isOpen}
+      className="khenx-acc-header"
       style={{
         width: "100%",
         display: "flex",
@@ -87,7 +88,7 @@ export const AccordionSection = ({
           <SectionIcon d={ICONS[iconKey] ?? ICONS.profile} />
         </span>
       </div>
-      <span style={{ fontSize: 14.5, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.2px" }}>{title}</span>
+      <span className="khenx-acc-title" style={{ fontSize: 14.5, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.2px", minWidth: 0 }}>{title}</span>
       {count != null && (
         <span
           style={{
@@ -97,12 +98,13 @@ export const AccordionSection = ({
             background: "#F1F5F9",
             borderRadius: 20,
             padding: "2px 9px",
+            flexShrink: 0,
           }}
         >
           {count}
         </span>
       )}
-      <span style={{ marginLeft: "auto", display: "flex", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)", color: "#94A3B8" }}>
+      <span style={{ marginLeft: "auto", display: "flex", flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)", color: "#94A3B8" }}>
         <ChevronDown size={18} />
       </span>
     </button>
@@ -118,7 +120,7 @@ export const AccordionSection = ({
 );
 
 export const RowGrid = ({ children }: { children: ReactNode }) => (
-  <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>{children}</div>
+  <div className="khenx-row-grid" style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>{children}</div>
 );
 
 export const DetailRow = ({ label, value, emphasize }: { label: string; value: ReactNode; emphasize?: boolean }) => (
@@ -128,12 +130,13 @@ export const DetailRow = ({ label, value, emphasize }: { label: string; value: R
       border: `1px solid ${emphasize ? "#CFF8EC" : "#F1F5F9"}`,
       borderRadius: 12,
       padding: "13px 14px",
+      minWidth: 0,
     }}
   >
     <div style={{ fontSize: 10.5, color: "#64748B", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 6 }}>
       {label}
     </div>
-    <div style={{ fontSize: 14.5, color: emphasize ? "#00806E" : "#0F172A", fontWeight: 700, letterSpacing: "-0.2px" }}>{value}</div>
+    <div style={{ fontSize: 14.5, color: emphasize ? "#00806E" : "#0F172A", fontWeight: 700, letterSpacing: "-0.2px", wordBreak: "break-word" }}>{value}</div>
   </div>
 );
 
@@ -170,10 +173,10 @@ const PropertyAccordion = ({ title, hint, sections }: PropertyAccordionProps) =>
   if (sections.length === 0) return null;
 
   return (
-    <div style={{ background: "#fff", borderRadius: 18, padding: "24px 26px 6px", border: "1px solid #E2E8F0" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+    <div className="khenx-acc-panel" style={{ background: "#fff", borderRadius: 18, padding: "24px 26px 6px", border: "1px solid #E2E8F0" }}>
+      <div className="khenx-acc-topbar" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
         <h2 style={{ fontSize: 17, fontWeight: 800, color: "#0F172A", margin: 0 }}>{title}</h2>
-        <span style={{ fontSize: 11, color: "#94A3B8", background: "#F8FAFC", border: "1px solid #F1F5F9", borderRadius: 6, padding: "3px 9px" }}>
+        <span className="khenx-acc-hint" style={{ fontSize: 11, color: "#94A3B8", background: "#F8FAFC", border: "1px solid #F1F5F9", borderRadius: 6, padding: "3px 9px", whiteSpace: "nowrap" }}>
           {hint}
         </span>
       </div>
@@ -216,6 +219,25 @@ const PropertyAccordion = ({ title, hint, sections }: PropertyAccordionProps) =>
           opacity: 1;
           transform: translateY(0);
           transition-delay: 0.08s;
+        }
+
+        @media (max-width: 480px) {
+          .khenx-acc-panel {
+            padding: 16px 16px 4px !important;
+          }
+          .khenx-acc-hint {
+            font-size: 10px !important;
+          }
+          .khenx-acc-header {
+            gap: 9px !important;
+            padding: 15px 2px !important;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .khenx-row-grid {
+            grid-template-columns: 1fr !important;
+          }
         }
       `}</style>
     </div>

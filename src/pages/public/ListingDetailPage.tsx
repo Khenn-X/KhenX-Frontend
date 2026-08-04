@@ -161,7 +161,7 @@ const SimilarCard = ({ listing, intel }: { listing: IListing; intel?: { overallS
   const sColor = score ? (score >= 8 ? "#00C9A7" : score >= 6 ? "#F59E0B" : "#F97316") : "#64748B";
 
   return (
-    <Link to={`/listings/${listing._id}`} style={{ textDecoration: "none", scrollSnapAlign: "start" }}>
+    <Link to={`/listings/${listing._id}`} style={{ textDecoration: "none", scrollSnapAlign: "start" }} className="khenx-similar-card">
       <div
         style={{
           background: "#fff",
@@ -215,14 +215,14 @@ const SimilarCard = ({ listing, intel }: { listing: IListing; intel?: { overallS
 
 // ─── Score metric cell ────────────────────────────────────────────────────────
 const ScoreCell = ({ label, icon, value, unit, colorValue, isLast }: { label: string; icon: React.ReactNode; value: string | number | null; unit?: string; colorValue?: string; isLast?: boolean }) => (
-  <div style={{ padding: "22px 20px", borderRight: isLast ? "none" : "1px solid #F1F5F9", display: "flex", flexDirection: "column", gap: 12 }}>
+  <div className="khenx-score-cell" style={{ padding: "22px 20px", borderRight: isLast ? "none" : "1px solid #F1F5F9", display: "flex", flexDirection: "column", gap: 12 }}>
     <span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.6px" }}>{label}</span>
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ width: 38, height: 38, borderRadius: 10, background: colorValue ? colorValue + "18" : "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: colorValue ? colorValue + "18" : "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         {icon}
       </div>
       {value != null ? (
-        <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 3, minWidth: 0 }}>
           <span style={{ fontSize: 22, fontWeight: 800, color: colorValue ?? "#0F172A", letterSpacing: "-0.5px" }}>{value}</span>
           {unit && <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>{unit}</span>}
         </div>
@@ -394,8 +394,13 @@ const ListingDetailPage = () => {
   const annualTotal = listing.serviceCharge ? listing.price + listing.serviceCharge : listing.price;
 
   return (
-    <div style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif", background: "#F8FAFC", minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif", background: "#F8FAFC", minHeight: "100vh", overflowX: "hidden" }}>
       <style>{`
+        /* Grid/flex items with padding but content-box sizing render wider
+           than their track by the padding amount, overflowing the layout.
+           This is the actual cause of content getting clipped on mobile —
+           not a missing breakpoint. Reset it globally for this page. */
+        *, *::before, *::after { box-sizing: border-box; }
         @keyframes khenx-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes khenx-bar-in { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
@@ -403,6 +408,7 @@ const ListingDetailPage = () => {
       {/* ── Sticky summary bar (desktop) — appears once hero scrolls away ────── */}
       {showStickyBar && (
         <div
+          className="khenx-sticky-bar"
           style={{
             position: "sticky",
             top: 0,
@@ -442,6 +448,7 @@ const ListingDetailPage = () => {
             </div>
             <button
               onClick={() => scrollToSection("book-inspection")}
+              className="khenx-sticky-cta"
               style={{ flexShrink: 0, background: "#0F172A", color: "#fff", border: "none", borderRadius: 10, padding: "9px 18px", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
             >
               Book Inspection
@@ -451,7 +458,7 @@ const ListingDetailPage = () => {
       )}
 
       {/* ── Back nav ─────────────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px 0" }}>
+      <div className="khenx-back-nav" style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px 0" }}>
         <button
           onClick={() => navigate(-1)}
           style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, color: "#64748B", background: "none", border: "none", cursor: "pointer", padding: "6px 0", fontWeight: 500 }}
@@ -463,7 +470,7 @@ const ListingDetailPage = () => {
       {/* ── Two-column layout ─────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px 60px", display: "grid", gridTemplateColumns: "1fr 320px", gap: 28, alignItems: "start" }} className="khenx-layout">
         {/* ══ LEFT COLUMN ══ */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }} className="khenx-left-col">
           {/* ── Gallery ──────────────────────────────────────────────────────── */}
           <div ref={heroRef}>
             <PropertyGallery
@@ -477,22 +484,22 @@ const ListingDetailPage = () => {
           {/* ── Overview: property info card ──────────────────────────────────── */}
           <div id="overview" ref={(el) => { sectionRefs.current["overview"] = el; }} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <Reveal>
-              <div style={{ background: "#fff", borderRadius: 18, padding: "26px 28px", border: "1px solid #E2E8F0" }}>
+              <div className="khenx-panel" style={{ background: "#fff", borderRadius: 18, padding: "26px 28px", border: "1px solid #E2E8F0" }}>
                 {/* Header row */}
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 22 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ flex: 1, minWidth: 220 }}>
                     <span style={{ display: "inline-block", background: badge.bg, border: `1px solid ${badge.borderColor}`, color: badge.color, borderRadius: 8, padding: "3px 10px", fontSize: 10, fontWeight: 700, marginBottom: 12, letterSpacing: "0.5px" }}>
                       {badge.label}
                     </span>
-                    <h1 style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", margin: "0 0 8px", lineHeight: 1.25, letterSpacing: "-0.4px" }}>{listing.title}</h1>
+                    <h1 className="khenx-title" style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", margin: "0 0 8px", lineHeight: 1.25, letterSpacing: "-0.4px" }}>{listing.title}</h1>
                     <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#64748B", fontSize: 12.5 }}>
                       <PinIcon />
                       {listing.estateName ? `${listing.estateName}, ` : ""}{listing.areaName}, Lagos
                     </div>
                   </div>
 
-                  <div style={{ textAlign: "right", flexShrink: 0, position: "relative" }}>
-                    <div style={{ fontSize: 26, fontWeight: 900, color: "#0F172A", letterSpacing: "-1px", lineHeight: 1.1 }}>{formatPrice(listing.price)}</div>
+                  <div className="khenx-price-block" style={{ textAlign: "right", flexShrink: 0, position: "relative" }}>
+                    <div className="khenx-price" style={{ fontSize: 26, fontWeight: 900, color: "#0F172A", letterSpacing: "-1px", lineHeight: 1.1 }}>{formatPrice(listing.price)}</div>
                     <button
                       onClick={() => setShowPriceBreakdown((v) => !v)}
                       style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#94A3B8", marginTop: 4, background: "none", border: "none", cursor: "pointer", padding: 0 }}
@@ -510,6 +517,7 @@ const ListingDetailPage = () => {
 
                     {showPriceBreakdown && listing.serviceCharge ? (
                       <div
+                        className="khenx-price-popup"
                         style={{
                           position: "absolute",
                           top: "100%",
@@ -519,7 +527,8 @@ const ListingDetailPage = () => {
                           color: "#fff",
                           borderRadius: 12,
                           padding: "14px 16px",
-                          width: 220,
+                          width: "min(220px, calc(100vw - 48px))",
+                          boxSizing: "border-box",
                           textAlign: "left",
                           boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
                           zIndex: 10,
@@ -556,11 +565,11 @@ const ListingDetailPage = () => {
                         { icon: <AreaIcon />, label: listing.propertyType, sub: "Property Type" },
                       ]
                   ).map((stat, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: "#F8FAFC", borderRadius: 12, padding: "10px 16px", border: "1px solid #F1F5F9" }}>
+                    <div key={i} className="khenx-stat-chip" style={{ display: "flex", alignItems: "center", gap: 10, background: "#F8FAFC", borderRadius: 12, padding: "10px 16px", border: "1px solid #F1F5F9", flex: "1 1 auto", minWidth: 140 }}>
                       <div style={{ width: 34, height: 34, borderRadius: 9, background: "#fff", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", flexShrink: 0 }}>
                         {stat.icon}
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0F172A", textTransform: "capitalize" }}>{stat.label}</div>
                         <div style={{ fontSize: 10.5, color: "#94A3B8", marginTop: 1 }}>{stat.sub}</div>
                       </div>
@@ -592,7 +601,7 @@ const ListingDetailPage = () => {
           {activeFeatures.length > 0 && (
             <div id="amenities" ref={(el) => { sectionRefs.current["amenities"] = el; }}>
               <Reveal>
-                <div style={{ background: "#fff", borderRadius: 18, padding: "24px 26px", border: "1px solid #E2E8F0" }}>
+                <div className="khenx-panel" style={{ background: "#fff", borderRadius: 18, padding: "24px 26px", border: "1px solid #E2E8F0" }}>
                   <h2 style={{ fontSize: 17, fontWeight: 800, color: "#0F172A", margin: "0 0 16px" }}>Amenities & Features</h2>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                     {activeFeatures.map((f) => (
@@ -621,7 +630,7 @@ const ListingDetailPage = () => {
             {/* AI notes */}
             {intel?.notes && (
               <Reveal delay={0.05}>
-                <div style={{ background: "#0F172A", borderRadius: 18, padding: "24px 26px", color: "#fff", border: "1px solid #1E293B" }}>
+                <div className="khenx-panel" style={{ background: "#0F172A", borderRadius: 18, padding: "24px 26px", color: "#fff", border: "1px solid #1E293B" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(0,201,167,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <SparkleIcon />
@@ -639,10 +648,10 @@ const ListingDetailPage = () => {
             {/* Detail card */}
             {intel && (
               <Reveal delay={0.1}>
-                <div style={{ background: "#fff", borderRadius: 18, padding: "24px 26px", border: "1px solid #E2E8F0" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
+                <div className="khenx-panel" style={{ background: "#fff", borderRadius: 18, padding: "24px 26px", border: "1px solid #E2E8F0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22, flexWrap: "wrap", gap: 8 }}>
                     <h2 style={{ fontSize: 17, fontWeight: 800, color: "#0F172A", margin: 0 }}>Neighbourhood Intelligence</h2>
-                    <span style={{ fontSize: 11, color: "#94A3B8", background: "#F8FAFC", border: "1px solid #F1F5F9", borderRadius: 6, padding: "3px 9px" }}>
+                    <span style={{ fontSize: 11, color: "#94A3B8", background: "#F8FAFC", border: "1px solid #F1F5F9", borderRadius: 6, padding: "3px 9px", whiteSpace: "nowrap" }}>
                       Updated {formatLastUpdated(intel.lastUpdated ?? intel.updatedAt)}
                     </span>
                   </div>
@@ -707,7 +716,7 @@ const ListingDetailPage = () => {
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
                     <h2 style={{ fontSize: 17, fontWeight: 800, color: "#0F172A", margin: 0 }}>Similar Properties</h2>
-                    <div style={{ display: "flex", gap: 8 }}>
+                    <div className="khenx-carousel-arrows" style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => scrollCarousel(-1)} style={{ width: 34, height: 34, borderRadius: "50%", border: "1.5px solid #E2E8F0", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#475569" }}>
                         <ChevronLeft />
                       </button>
@@ -730,7 +739,7 @@ const ListingDetailPage = () => {
         {/* ══ RIGHT SIDEBAR ══ */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 80 }} className="khenx-sidebar">
           {/* Schedule Inspection */}
-          <div id="book-inspection" style={{ background: "#fff", borderRadius: 18, padding: "22px 20px", border: "1px solid #E2E8F0", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
+          <div id="book-inspection" className="khenx-panel" style={{ background: "#fff", borderRadius: 18, padding: "22px 20px", border: "1px solid #E2E8F0", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
             <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0F172A", margin: "0 0 20px" }}>Schedule Inspection</h3>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -785,7 +794,7 @@ const ListingDetailPage = () => {
           </div>
 
           {/* Owner card */}
-          <div style={{ background: "#fff", borderRadius: 18, padding: "18px 20px", border: "1px solid #E2E8F0" }}>
+          <div className="khenx-panel" style={{ background: "#fff", borderRadius: 18, padding: "18px 20px", border: "1px solid #E2E8F0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
               <div style={{ position: "relative", flexShrink: 0 }}>
                 {ownerAvatar ? (
@@ -823,12 +832,12 @@ const ListingDetailPage = () => {
           </div>
 
           {/* Institutional Trust */}
-          <div style={{ background: "#F8FAFC", borderRadius: 18, padding: "16px 18px", border: "1px solid #E2E8F0" }}>
+          <div className="khenx-panel" style={{ background: "#F8FAFC", borderRadius: 18, padding: "16px 18px", border: "1px solid #E2E8F0" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: "#fff", border: "1px solid #E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <CheckShieldIcon />
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0F172A", marginBottom: 5 }}>Institutional Trust</div>
                 <p style={{ fontSize: 11.5, color: "#64748B", lineHeight: 1.65, margin: 0 }}>
                   Ownership papers, structural integrity, and neighbourhood data have been independently verified by KhenX Analysts.
@@ -839,7 +848,7 @@ const ListingDetailPage = () => {
 
           {/* Quick intel pill */}
           {intel && (
-            <div style={{ background: "#fff", borderRadius: 18, padding: "18px 20px", border: "1px solid #E2E8F0" }}>
+            <div className="khenx-panel" style={{ background: "#fff", borderRadius: 18, padding: "18px 20px", border: "1px solid #E2E8F0" }}>
               <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0F172A", marginBottom: 14 }}>{listing.areaName} — Quick Intel</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {intel.overallScore != null && (
@@ -851,7 +860,7 @@ const ListingDetailPage = () => {
                   </div>
                 )}
                 {intel.avgRentMin != null && intel.avgRentMax != null && (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 4 }}>
                     <span style={{ fontSize: 11.5, color: "#64748B" }}>Avg. Rent Range</span>
                     <span style={{ fontSize: 11.5, fontWeight: 700, color: "#0F172A" }}>
                       ₦{(intel.avgRentMin / 1_000_000).toFixed(1)}M – ₦{(intel.avgRentMax / 1_000_000).toFixed(1)}M
@@ -903,7 +912,7 @@ const ListingDetailPage = () => {
 
       {/* ── Booking confirmation toast ─────────────────────────────────────────── */}
       {showToast && (
-        <div style={{ position: "fixed", bottom: 28, right: 28, background: "#0F172A", color: "#fff", borderRadius: 14, padding: "16px 20px", display: "flex", alignItems: "flex-start", gap: 12, maxWidth: 340, boxShadow: "0 12px 32px rgba(0,0,0,0.25)", border: "1px solid #1E293B", zIndex: 1000, animation: "khenx-toast-in 0.25s ease-out" }}>
+        <div className="khenx-toast" style={{ position: "fixed", bottom: 28, right: 28, background: "#0F172A", color: "#fff", borderRadius: 14, padding: "16px 20px", display: "flex", alignItems: "flex-start", gap: 12, maxWidth: 340, boxShadow: "0 12px 32px rgba(0,0,0,0.25)", border: "1px solid #1E293B", zIndex: 1000, animation: "khenx-toast-in 0.25s ease-out" }}>
           <div style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, background: "rgba(0,201,167,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <CheckShieldIcon />
           </div>
@@ -916,12 +925,18 @@ const ListingDetailPage = () => {
 
       <style>{`
         .khenx-mobile-cta { display: none; }
+
+        /* ── Tablet & below ─────────────────────────────────────────────── */
         @media (max-width: 860px) {
-          .khenx-layout { grid-template-columns: 1fr !important; }
+          .khenx-layout { grid-template-columns: 1fr !important; padding: 16px 16px 90px !important; gap: 20px !important; }
+          .khenx-back-nav { padding: 14px 16px 0 !important; }
           .khenx-sidebar { position: static !important; }
           .khenx-score-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .khenx-intel-grid { grid-template-columns: 1fr !important; }
+          .khenx-score-cell:nth-child(2n) { border-right: none !important; }
+          .khenx-score-cell:nth-child(-n+2) { border-bottom: 1px solid #F1F5F9; }
+          .khenx-intel-grid { grid-template-columns: 1fr !important; gap: 22px !important; }
           .khenx-section-nav { display: none !important; }
+          .khenx-sticky-bar > div { padding: 12px 16px !important; }
           .khenx-mobile-cta {
             display: flex;
             position: fixed;
@@ -932,10 +947,36 @@ const ListingDetailPage = () => {
             background: #fff;
             border-top: 1px solid #E2E8F0;
             padding: 12px 16px;
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
           }
+        }
+
+        /* ── Small phones ───────────────────────────────────────────────── */
+        @media (max-width: 480px) {
+          .khenx-panel { padding: 16px !important; }
+          .khenx-title { font-size: 19px !important; }
+          .khenx-price-block { text-align: left !important; width: 100%; }
+          .khenx-price { font-size: 21px !important; }
+          .khenx-price-popup { right: auto !important; left: 0 !important; }
+          .khenx-score-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .khenx-score-cell { padding: 16px 14px !important; }
+          .khenx-stat-chip { min-width: 100% !important; }
+          .khenx-similar-card { }
+          .khenx-similar-card > div { width: 220px !important; }
+          .khenx-carousel { gap: 12px !important; }
+        }
+
+        @media (max-width: 380px) {
+          .khenx-score-grid { grid-template-columns: 1fr !important; }
+          .khenx-score-cell { border-right: none !important; border-bottom: 1px solid #F1F5F9; }
+          .khenx-score-cell:last-child { border-bottom: none; }
+        }
+
+        @media (max-width: 400px) {
+          .khenx-toast { left: 16px !important; right: 16px !important; bottom: 88px !important; max-width: none !important; }
         }
       `}</style>
     </div>
