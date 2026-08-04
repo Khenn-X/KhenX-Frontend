@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import background from '../../assets/living2.jfif';
 import IntelligenceChat from '../neighbourhood/IntelligenceChat';
+import IntelligenceChatTeaser from '../neighbourhood/IntelligenceChatTeaser';
+import { useAuth } from '../../hooks/useAuth';
 
 export const NextGenSearch: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const [showRealChat, setShowRealChat] = useState(false);
+
+  const renderChatPanel = () => {
+    if (isAuthenticated || showRealChat) {
+      return <IntelligenceChat />;
+    }
+
+    return <IntelligenceChatTeaser onTryNow={() => setShowRealChat(true)} />;
+  };
+
   return (
     <section className="relative overflow-hidden py-20 bg-[#F2F4FA]">
       {/* Faint decorative background image — sits behind all content.
@@ -77,7 +90,7 @@ export const NextGenSearch: React.FC = () => {
           {/* Right Side - Live AI Intelligence Chat */}
           <div className="lg:flex justify-center">
             <div className="w-full max-w-[32rem]">
-              <IntelligenceChat />
+              {renderChatPanel()}
             </div>
           </div>
         </div>
