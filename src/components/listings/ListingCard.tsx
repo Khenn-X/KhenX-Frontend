@@ -23,7 +23,12 @@ import {
 import { TypeBadge } from "./ListingBadge";
 import PriceDisplay from "./PriceDisplay";
 import ImageWithFallback from "../shared/ImageWithFallback";
-import { cn, capitalize, formatNaira, getListingSummaryMeta } from "../../lib/utils";
+import {
+  cn,
+  capitalize,
+  formatNaira,
+  getListingSummaryMeta,
+} from "../../lib/utils";
 import { getTypeVisual } from "../../types/listingType.config";
 
 // Real area-level scores, looked up by the page from useFeaturedNeighbourhoods and
@@ -128,7 +133,7 @@ const ListingCard = ({
       <div
         className={cn(
           "relative overflow-hidden",
-          isListView ? "w-48 shrink-0" : "w-full",
+          isListView ? "w-28 sm:w-48 shrink-0" : "w-full",
         )}
       >
         <ImageWithFallback
@@ -136,7 +141,9 @@ const ListingCard = ({
           alt={listing.title}
           className={cn(
             "transition-transform duration-300 group-hover:scale-[1.03]",
-            isListView ? "h-40 w-48 object-cover" : "h-48 w-full object-cover",
+            isListView
+              ? "h-28 w-28 sm:h-40 sm:w-48 object-cover"
+              : "h-48 w-full object-cover",
           )}
         />
 
@@ -160,7 +167,7 @@ const ListingCard = ({
 
         {/* Intel score overlay — only renders when real scores were passed down */}
         {hasIntel && (
-          <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
+          <div className="absolute bottom-3 left-3 right-3 flex flex-wrap items-center gap-1.5">
             {intelligence?.powerScore != null && (
               <span
                 className={cn(

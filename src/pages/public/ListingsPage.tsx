@@ -35,9 +35,7 @@ const ListingsPage = () => {
 
   const effectiveFilters = {
     ...serverFilters,
-    propertyType: activeTab && activeTab !== 'land' && activeTab !== 'commercial' && activeTab !== 'short-let-tab'
-      ? activeTab
-      : serverFilters.propertyType,
+    propertyType: activeTab || serverFilters.propertyType,
   };
 
   const { data, isLoading } = useListings({ ...effectiveFilters, page, limit: LIMIT });
@@ -99,7 +97,7 @@ const ListingsPage = () => {
             {/* Stats bar */}
             <ListingsStatsBar totalActive={meta?.total} />
 
-            <div className="flex gap-6">
+            <div className="flex flex-col lg:flex-row gap-6">
               {/* Sidebar filters — desktop */}
               <ListingFilters filters={filters} onChange={handleFilterChange} />
 

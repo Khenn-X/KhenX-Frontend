@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { SlidersHorizontal, X, Search, ChevronDown } from 'lucide-react';
-import type { ParsedListingFilters } from '../../types/search.types';
-import { PROPERTY_TYPES, LISTING_TYPES } from '../../types/listing.types';
-import type { IListingFeatures } from '../../types/listing.types';
-import { LAGOS_AREAS } from '../../constants/lagos-areas';
-import { cn } from '../../lib/utils';
+import { useState, useEffect } from "react";
+import { SlidersHorizontal, X, Search, ChevronDown } from "lucide-react";
+import type { ParsedListingFilters } from "../../types/search.types";
+import { PROPERTY_TYPES, LISTING_TYPES } from "../../types/listing.types";
+import type { IListingFeatures } from "../../types/listing.types";
+import { LAGOS_AREAS } from "../../constants/lagos-areas";
+import { cn } from "../../lib/utils";
 
 // ── NOTE: these fields don't exist on ParsedListingFilters yet.
 // Add them there (all optional) for this component's onChange to type-check cleanly:
@@ -17,36 +17,43 @@ export interface ExtendedListingFilters extends ParsedListingFilters {
   areaNames?: string[];
   minPowerScore?: number;
   minSecurityScore?: number;
-  maxFloodRisk?: 'low' | 'medium' | 'high';
+  maxFloodRisk?: "low" | "medium" | "high";
   features?: Partial<IListingFeatures>;
 }
 
 const BEDROOM_DISPLAY = [
-  { value: 0, label: 'Studio' },
-  { value: 1, label: '1' },
-  { value: 2, label: '2' },
-  { value: 3, label: '3' },
-  { value: 4, label: '4' },
-  { value: 5, label: '5+' },
+  { value: 0, label: "Studio" },
+  { value: 1, label: "1" },
+  { value: 2, label: "2" },
+  { value: 3, label: "3" },
+  { value: 4, label: "4" },
+  { value: 5, label: "5+" },
 ];
 
 const PROPERTY_LABELS: Record<string, string> = {
-  apartment: 'Apartment/Flat',
-  duplex: 'Duplex',
-  bungalow: 'Bungalow',
-  'self-con': 'Self-Con',
-  'mini-flat': 'Mini Flat',
-  terrace: 'Terrace',
-  detached: 'Detached',
+  apartment: "Apartment/Flat",
+  duplex: "Duplex",
+  bungalow: "Bungalow",
+  "self-con": "Self-Con",
+  "mini-flat": "Mini Flat",
+  terrace: "Terrace",
+  detached_house: "Detached House",
+  semi_detached: "Semi Detached",
+  penthouse: "Penthouse",
+  studio: "Studio",
+  office: "Office",
+  shop: "Shop",
+  commercial: "Commercial",
+  land: "Land",
 };
 
 const FEATURE_OPTIONS: { key: keyof IListingFeatures; label: string }[] = [
-  { key: 'generator', label: 'Generator' },
-  { key: 'borehole', label: 'Borehole' },
-  { key: 'security', label: 'Estate Security' },
-  { key: 'parking', label: 'Parking' },
-  { key: 'pool', label: 'Swimming Pool' },
-  { key: 'cctv', label: 'CCTV' },
+  { key: "generator", label: "Generator" },
+  { key: "borehole", label: "Borehole" },
+  { key: "security", label: "Estate Security" },
+  { key: "parking", label: "Parking" },
+  { key: "pool", label: "Swimming Pool" },
+  { key: "cctv", label: "CCTV" },
 ];
 
 interface FilterContentProps {
@@ -58,14 +65,22 @@ interface FilterContentProps {
 }
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <p className="mb-3 text-xs font-bold text-slate-500 uppercase tracking-wide">{children}</p>
+  <p className="mb-3 text-xs font-bold text-slate-500 uppercase tracking-wide">
+    {children}
+  </p>
 );
 
-const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: FilterContentProps) => {
-  const [areaSearch, setAreaSearch] = useState('');
+const FilterContent = ({
+  draft,
+  setDraft,
+  onApply,
+  onReset,
+  activeCount,
+}: FilterContentProps) => {
+  const [areaSearch, setAreaSearch] = useState("");
 
   const visibleAreas = LAGOS_AREAS.filter((a) =>
-    a.toLowerCase().includes(areaSearch.toLowerCase())
+    a.toLowerCase().includes(areaSearch.toLowerCase()),
   ).slice(0, 8);
 
   const toggleArea = (area: string) => {
@@ -86,7 +101,7 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
   };
 
   const inputClass =
-    'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#00C9A7] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/20';
+    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#00C9A7] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/20";
 
   return (
     <div className="space-y-7">
@@ -104,7 +119,10 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
         </div>
         <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
           {visibleAreas.map((area) => (
-            <label key={area} className="flex items-center justify-between cursor-pointer group">
+            <label
+              key={area}
+              className="flex items-center justify-between cursor-pointer group"
+            >
               <span className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -112,7 +130,9 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
                   onChange={() => toggleArea(area)}
                   className="h-4 w-4 rounded border-slate-300 text-[#00C9A7] focus:ring-[#00C9A7]"
                 />
-                <span className="text-sm text-slate-600 group-hover:text-[#0F172A]">{area}</span>
+                <span className="text-sm text-slate-600 group-hover:text-[#0F172A]">
+                  {area}
+                </span>
               </span>
             </label>
           ))}
@@ -127,16 +147,23 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
             <button
               key={type}
               onClick={() =>
-                setDraft((d) => ({ ...d, listingType: d.listingType === type ? undefined : type }))
+                setDraft((d) => ({
+                  ...d,
+                  listingType: d.listingType === type ? undefined : type,
+                }))
               }
               className={cn(
-                'rounded-lg px-2 py-2 text-xs font-semibold transition-colors',
+                "rounded-lg px-2 py-2 text-xs font-semibold transition-colors",
                 draft.listingType === type
-                  ? 'bg-[#0A1628] text-white'
-                  : 'border border-slate-200 text-slate-600 hover:border-slate-300'
+                  ? "bg-[#0A1628] text-white"
+                  : "border border-slate-200 text-slate-600 hover:border-slate-300",
               )}
             >
-              {type === 'rent' ? 'For Rent' : type === 'sale' ? 'For Sale' : 'Short Let'}
+              {type === "rent"
+                ? "For Rent"
+                : type === "sale"
+                  ? "For Sale"
+                  : "Short Let"}
             </button>
           ))}
         </div>
@@ -149,18 +176,24 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
           <input
             type="number"
             placeholder="Min"
-            value={draft.minPrice ?? ''}
+            value={draft.minPrice ?? ""}
             onChange={(e) =>
-              setDraft((d) => ({ ...d, minPrice: e.target.value ? Number(e.target.value) : undefined }))
+              setDraft((d) => ({
+                ...d,
+                minPrice: e.target.value ? Number(e.target.value) : undefined,
+              }))
             }
             className={inputClass}
           />
           <input
             type="number"
             placeholder="Max"
-            value={draft.maxPrice ?? ''}
+            value={draft.maxPrice ?? ""}
             onChange={(e) =>
-              setDraft((d) => ({ ...d, maxPrice: e.target.value ? Number(e.target.value) : undefined }))
+              setDraft((d) => ({
+                ...d,
+                maxPrice: e.target.value ? Number(e.target.value) : undefined,
+              }))
             }
             className={inputClass}
           />
@@ -171,7 +204,9 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
           max={10000000}
           step={50000}
           value={draft.maxPrice ?? 10000000}
-          onChange={(e) => setDraft((d) => ({ ...d, maxPrice: Number(e.target.value) }))}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, maxPrice: Number(e.target.value) }))
+          }
           className="w-full accent-[#00C9A7]"
         />
       </div>
@@ -184,13 +219,16 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
             <button
               key={value}
               onClick={() =>
-                setDraft((d) => ({ ...d, bedrooms: d.bedrooms === value ? undefined : value }))
+                setDraft((d) => ({
+                  ...d,
+                  bedrooms: d.bedrooms === value ? undefined : value,
+                }))
               }
               className={cn(
-                'h-9 rounded-lg border text-sm font-medium transition-colors',
+                "h-9 rounded-lg border text-sm font-medium transition-colors",
                 draft.bedrooms === value
-                  ? 'border-[#0A1628] bg-[#0A1628] text-white'
-                  : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                  ? "border-[#0A1628] bg-[#0A1628] text-white"
+                  : "border-slate-200 text-slate-600 hover:border-slate-300",
               )}
             >
               {label}
@@ -207,13 +245,16 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
             <button
               key={type}
               onClick={() =>
-                setDraft((d) => ({ ...d, propertyType: d.propertyType === type ? undefined : type }))
+                setDraft((d) => ({
+                  ...d,
+                  propertyType: d.propertyType === type ? undefined : type,
+                }))
               }
               className={cn(
-                'rounded-lg border px-3 py-2 text-xs font-semibold transition-colors text-left',
+                "rounded-lg border px-3 py-2 text-xs font-semibold transition-colors text-left",
                 draft.propertyType === type
-                  ? 'border-[#00C9A7] bg-[#00C9A7]/10 text-[#00C9A7]'
-                  : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                  ? "border-[#00C9A7] bg-[#00C9A7]/10 text-[#00C9A7]"
+                  : "border-slate-200 text-slate-600 hover:border-slate-300",
               )}
             >
               {PROPERTY_LABELS[type] ?? type}
@@ -230,7 +271,7 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-sm text-slate-600">Power Supply</span>
             <span className="text-sm font-semibold text-[#00C9A7]">
-              {draft.minPowerScore ? `${draft.minPowerScore}+` : 'Any'}
+              {draft.minPowerScore ? `${draft.minPowerScore}+` : "Any"}
             </span>
           </div>
           <input
@@ -253,7 +294,7 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-sm text-slate-600">Security Score</span>
             <span className="text-sm font-semibold text-[#00C9A7]">
-              {draft.minSecurityScore ? `${draft.minSecurityScore}+` : 'Any'}
+              {draft.minSecurityScore ? `${draft.minSecurityScore}+` : "Any"}
             </span>
           </div>
           <input
@@ -273,17 +314,20 @@ const FilterContent = ({ draft, setDraft, onApply, onReset, activeCount }: Filte
         </div>
 
         <div>
-          <span className="text-sm text-slate-600 block mb-1.5">Flood Risk</span>
+          <span className="text-sm text-slate-600 block mb-1.5">
+            Flood Risk
+          </span>
           <div className="relative">
             <select
-              value={draft.maxFloodRisk ?? ''}
+              value={draft.maxFloodRisk ?? ""}
               onChange={(e) =>
                 setDraft((d) => ({
                   ...d,
-                  maxFloodRisk: (e.target.value || undefined) as ExtendedListingFilters['maxFloodRisk'],
+                  maxFloodRisk: (e.target.value ||
+                    undefined) as ExtendedListingFilters["maxFloodRisk"],
                 }))
               }
-              className={cn(inputClass, 'appearance-none pr-8')}
+              className={cn(inputClass, "appearance-none pr-8")}
             >
               <option value="">Any</option>
               <option value="low">Low only</option>
@@ -339,7 +383,11 @@ interface ListingFiltersProps {
   className?: string;
 }
 
-const ListingFilters = ({ filters, onChange, className }: ListingFiltersProps) => {
+const ListingFilters = ({
+  filters,
+  onChange,
+  className,
+}: ListingFiltersProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState<ExtendedListingFilters>(filters);
 
@@ -349,7 +397,11 @@ const ListingFilters = ({ filters, onChange, className }: ListingFiltersProps) =
   }, [filters]);
 
   const activeCount = Object.values(draft).filter((v) =>
-    Array.isArray(v) ? v.length > 0 : typeof v === 'object' && v !== null ? Object.values(v).some(Boolean) : Boolean(v)
+    Array.isArray(v)
+      ? v.length > 0
+      : typeof v === "object" && v !== null
+        ? Object.values(v).some(Boolean)
+        : Boolean(v),
   ).length;
 
   const handleApply = () => {
@@ -365,7 +417,7 @@ const ListingFilters = ({ filters, onChange, className }: ListingFiltersProps) =
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className={cn('hidden lg:block w-72 shrink-0', className)}>
+      <aside className={cn("hidden lg:block w-72 shrink-0", className)}>
         <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white overflow-hidden">
           <div className="flex items-center justify-between bg-[#0A1628] px-5 py-3.5">
             <span className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -373,7 +425,10 @@ const ListingFilters = ({ filters, onChange, className }: ListingFiltersProps) =
               Filter Properties
             </span>
             {activeCount > 0 && (
-              <button onClick={handleReset} className="text-xs text-[#00C9A7] hover:underline">
+              <button
+                onClick={handleReset}
+                className="text-xs text-[#00C9A7] hover:underline"
+              >
                 Reset all
               </button>
             )}
@@ -407,14 +462,21 @@ const ListingFilters = ({ filters, onChange, className }: ListingFiltersProps) =
 
         {isOpen && (
           <div className="fixed inset-0 z-50 flex">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setIsOpen(false)} />
-            <div className="relative ml-auto flex h-full w-80 flex-col bg-white shadow-xl">
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setIsOpen(false)}
+            />
+            <div className="relative ml-auto flex h-full w-[85vw] max-w-[320px] flex-col bg-white shadow-xl">
+              {" "}
               <div className="flex items-center justify-between bg-[#0A1628] px-5 py-4">
                 <span className="flex items-center gap-2 text-sm font-semibold text-white">
                   <SlidersHorizontal className="h-4 w-4 text-[#00C9A7]" />
                   Filter Properties
                 </span>
-                <button onClick={() => setIsOpen(false)} className="rounded-lg p-1 hover:bg-white/10 transition-colors">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-lg p-1 hover:bg-white/10 transition-colors"
+                >
                   <X className="h-4 w-4 text-white" />
                 </button>
               </div>
