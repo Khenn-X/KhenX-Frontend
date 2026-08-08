@@ -1,6 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { listingSchema, normalizeListingSubmissionData } from './validators';
+import { adminProfileSchema, listingSchema, normalizeListingSubmissionData } from './validators';
+
+test('accepts valid admin profile data', () => {
+  const result = adminProfileSchema.safeParse({
+    fullName: 'Ada Okafor',
+    avatarUrl: 'https://example.com/avatar.jpg',
+  });
+
+  assert.equal(result.success, true);
+});
+
+test('rejects an invalid avatar URL for admin profile data', () => {
+  const result = adminProfileSchema.safeParse({
+    fullName: 'Ada Okafor',
+    avatarUrl: 'not-a-url',
+  });
+
+  assert.equal(result.success, false);
+  assert.match(result.error?.issues.map((issue) => issue.message).join('\n') ?? '', /Please enter a valid URL/);
+});
 
 test('allows land listings without bedrooms and bathrooms when propertyCategory is land', () => {
   const result = listingSchema.safeParse({

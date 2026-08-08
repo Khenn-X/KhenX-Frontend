@@ -41,6 +41,11 @@ export const authApi = {
     return data;
   },
 
+  updateProfile: async (payload: { fullName?: string; avatarUrl?: string }): Promise<ApiResponse<{ user: IUser }>> => {
+    const { data } = await api.patch('/auth/me', payload);
+    return data;
+  },
+
   forgotPassword: async (
     payload: ForgotPasswordPayload,
   ): Promise<ApiResponse> => {

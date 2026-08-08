@@ -1,12 +1,7 @@
-import React from 'react'
+import AdminProfilePage from '../admin/AdminProfilePage';
 
 const SuperadminProfilePage = () => {
-  return (
-    <div>
-        <p>Superadmin Profile</p>
-      
-    </div>
-  )
-}
+  return <AdminProfilePage />;
+};
 
-export default SuperadminProfilePage
+export default SuperadminProfilePage;

@@ -3,9 +3,6 @@ import axios, { AxiosError } from 'axios';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   withCredentials: true, // CRITICAL: sends httpOnly JWT cookie automatically
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Toggle verbose logging in development or via env var VITE_VERBOSE_LOGS=true

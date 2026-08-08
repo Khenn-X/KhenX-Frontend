@@ -18,6 +18,13 @@ export const useAgentProfile = (id: string) => {
   });
 };
 
+export const useAgentOwnProfile = () => {
+  return useQuery({
+    queryKey: ['agents', 'me'] as const,
+    queryFn: () => agentsApi.getOwnProfile(),
+  });
+};
+
 export const useUpdateAgentProfile = () => {
   const queryClient = useQueryClient();
 
@@ -25,6 +32,7 @@ export const useUpdateAgentProfile = () => {
     mutationFn: (payload: UpdateAgentProfilePayload) => agentsApi.updateProfile(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.kyc.status });
+      queryClient.invalidateQueries({ queryKey: ['agents', 'me'] as const });
     },
   });
 };

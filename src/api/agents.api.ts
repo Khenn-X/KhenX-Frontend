@@ -5,7 +5,7 @@ import type { IUser } from "../types/auth.types";
 
 export interface AgentPublicProfile {
   agent: IAgent | null;
-  user: Pick<IUser, "_id" | "fullName" | "avatarUrl"> | null;
+  user: Pick<IUser, "_id" | "fullName" | "avatarUrl" | "email"> | null;
 }
 
 export interface AgentsListResponse {
@@ -49,11 +49,35 @@ export const agentsApi = {
     return data;
   },
 
+  getOwnProfile: async (): Promise<ApiResponse<{ agent: IAgent; user: Pick<IUser, "_id" | "fullName" | "avatarUrl" | "email"> }>> => {
+    const { data } = await api.get("/agents/profile");
+    return data;
+  },
+
   // Agent — update own profile
   updateProfile: async (
     payload: UpdateAgentProfilePayload,
-  ): Promise<ApiResponse<{ agent: IAgent }>> => {
+  ): Promise<ApiResponse<{ agent: IAgent; user?: Pick<IUser, "_id" | "fullName" | "avatarUrl" | "email"> }>> => {
     const { data } = await api.patch("/agents/profile", payload);
+    return data;
+  },
+
+  uploadAgentAvatar: async (file: File): Promise<ApiResponse<{ avatarUrl: string }>> => {
+    const formData = new FormData();
+    formData.append('avatar', file, file.name);
+
+    if (import.meta.env.DEV) {
+      console.log('[agentsApi.uploadAgentAvatar] file', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
+      for (const entry of formData.entries()) {
+        console.log('[agentsApi.uploadAgentAvatar] formData entry', entry[0], entry[1]);
+      }
+    }
+
+    const { data } = await api.post('/agents/profile/avatar', formData);
     return data;
   },
 };

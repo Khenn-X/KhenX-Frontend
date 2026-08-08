@@ -490,6 +490,11 @@ export const agentProfileSchema = z.object({
   bio: z.string().max(500, 'Bio cannot exceed 500 characters').optional(),
 });
 
+export const adminProfileSchema = z.object({
+  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  avatarUrl: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
+});
+
 // ─── Admin Actions ────────────────────────────────────────────────────────────
 
 export const rejectReasonSchema = z.object({
@@ -537,5 +542,6 @@ export type EnquiryFormData = z.infer<typeof enquirySchema>;
 export type WaitlistFormData = z.infer<typeof waitlistSchema>;
 export type ResidentReportFormData = z.infer<typeof residentReportSchema>;
 export type AgentProfileFormData = z.infer<typeof agentProfileSchema>;
+export type AdminProfileFormData = z.infer<typeof adminProfileSchema>;
 export type RejectReasonFormData = z.infer<typeof rejectReasonSchema>;
 export type SuspendAgentFormData = z.infer<typeof suspendAgentSchema>;
