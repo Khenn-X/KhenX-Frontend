@@ -34,6 +34,7 @@ export const ROUTES = {
   AGENT_ENQUIRIES: "/agent/enquiries",
   AGENT_KYC: "/agent/kyc",
   AGENT_PROFILE: "/agent/profile",
+  AGENT_SETTINGS: "/agent/settings",
 
   // Admin
   ADMIN_DASHBOARD: "/admin/dashboard",

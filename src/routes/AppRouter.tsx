@@ -73,6 +73,7 @@ const AgentEnquiriesPage = lazy(
 );
 const KYCPage = lazy(() => import("../pages/agent/KYCPage"));
 const AgentProfilePage = lazy(() => import("../pages/agent/AgentProfilePage"));
+const AgentSettingsPage = lazy(() => import("../pages/agent/SettingsPage"));
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 const AdminDashboardPage = lazy(
@@ -395,6 +396,16 @@ const AppRouter = () => {
             <AgentRoute>
               <DashboardLayout>
                 <AgentProfilePage />
+              </DashboardLayout>
+            </AgentRoute>
+          }
+        />
+        <Route
+          path="/agent/settings"
+          element={
+            <AgentRoute>
+              <DashboardLayout>
+                <AgentSettingsPage />
               </DashboardLayout>
             </AgentRoute>
           }

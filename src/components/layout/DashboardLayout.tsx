@@ -5,6 +5,7 @@ import {
   MessageSquare,
   ShieldCheck,
   User,
+  Settings,
   LogOut,
   ChevronLeft,
   // ChevronRight,
@@ -24,6 +25,7 @@ const agentNavItems = [
   { label: "Enquiries", to: ROUTES.AGENT_ENQUIRIES, icon: MessageSquare },
   { label: "KYC Verification", to: ROUTES.AGENT_KYC, icon: ShieldCheck },
   { label: "Profile", to: ROUTES.AGENT_PROFILE, icon: User },
+  { label: "Settings", to: ROUTES.AGENT_SETTINGS, icon: Settings },
 ];
 
 interface DashboardLayoutProps {
