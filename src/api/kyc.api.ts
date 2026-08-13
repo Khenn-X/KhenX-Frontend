@@ -21,7 +21,8 @@ export interface KYCSubmission {
 // Shape returned by GET /api/kyc/status
 export interface KYCSubmitPayload {
   document: File;
-  selfie: File;
+  selfieNeutral: File;
+  selfieSmiling: File;
   idType: string;
   idNumber: string;
   firstName: string;
@@ -37,17 +38,11 @@ export interface KYCStatusData {
 export const kycApi = {
   // ── Agent routes (/api/kyc/*) ─────────────────────────────────────────────
 
-  submitKYC: async ({
-    document,
-    selfie,
-    idType,
-    idNumber,
-    firstName,
-    lastName,
-  }: KYCSubmitPayload): Promise<ApiResponse> => {
+  submitKYC: async ({ document, selfieNeutral, selfieSmiling, idType, idNumber, firstName, lastName, }: KYCSubmitPayload): Promise<ApiResponse> => {
     const formData = new FormData();
     formData.append('document', document);
-    formData.append('selfie', selfie);
+    formData.append('selfieNeutral', selfieNeutral);
+    formData.append('selfieSmiling', selfieSmiling);
     formData.append('idType', idType);
     formData.append('idNumber', idNumber);
     formData.append('firstName', firstName);
@@ -88,7 +83,7 @@ export const kycApi = {
     return data;
   },
 
-  getKYCDocumentUrls: async (agentId: string): Promise<ApiResponse<{ signedUrls: string[] }>> => {
+  getKYCDocumentUrls: async (agentId: string): Promise<ApiResponse<{ signedUrls: string[]; documentUrl?: string; selfieNeutralUrl?: string; selfieSmilingUrl?: string }>> => {
     const { data } = await api.get(`/admin/agents/${agentId}/kyc-doc-url`);
     return data;
   },

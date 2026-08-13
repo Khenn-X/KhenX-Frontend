@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { ShieldCheck, ShieldX, ExternalLink, User } from 'lucide-react';
 import { useApproveKYC, useRejectKYC } from '../../hooks/useKYC';
 import type { KYCSubmission } from '../../api/kyc.api';
+import { kycApi } from '../../api/kyc.api';
 import { timeAgo, getInitials } from '../../lib/utils';
 
 interface KYCReviewCardProps {
@@ -17,6 +19,28 @@ const KYCReviewCard = ({ submission }: KYCReviewCardProps) => {
 
   // New nested shape: { agent: {...}, user: {...}, listingCount }
   const { agent, user } = submission;
+
+  const [docUrls, setDocUrls] = useState<{ documentUrl?: string; selfieNeutralUrl?: string; selfieSmilingUrl?: string } | null>(null);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      setLoadingDocs(true);
+      try {
+        const res = await kycApi.getKYCDocumentUrls(agent._id);
+        if (mounted) {
+          setDocUrls(res.data ?? null);
+        }
+      } catch (err) {
+        // ignore — admin will see placeholders
+      } finally {
+        if (mounted) setLoadingDocs(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [agent._id]);
 
   const handleReject = () => {
     if (reason.trim().length < 10) return;
@@ -39,26 +63,37 @@ const KYCReviewCard = ({ submission }: KYCReviewCardProps) => {
         </div>
       </div>
 
-      {/* Documents */}
-      {agent.kycDocuments.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Documents</p>
-          <div className="flex flex-wrap gap-2">
-            {agent.kycDocuments.map((url, i) => (
-              <a
-                key={i}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-[#00C9A7] hover:text-[#00C9A7] transition-colors"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Document {i + 1}
-              </a>
-            ))}
-          </div>
+      {/* Documents + Selfies (using signed URLs fetched from server) */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Submitted documents</p>
+        <div className="flex flex-wrap gap-2 items-center">
+          {docUrls?.documentUrl ? (
+            <a href={docUrls.documentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:border-[#00C9A7] hover:text-[#00C9A7] transition-colors">
+              <ExternalLink className="h-3 w-3" />
+              Document
+            </a>
+          ) : agent.kycDocuments?.[0] ? (
+            <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600">Document</div>
+          ) : null}
+
+          {docUrls?.selfieNeutralUrl ? (
+            <a href={docUrls.selfieNeutralUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg overflow-hidden border">
+              <img src={docUrls.selfieNeutralUrl} alt="Neutral selfie" className="w-24 h-24 object-cover" />
+            </a>
+          ) : agent.kycSelfieNeutralUrl ? (
+            <div className="rounded-lg overflow-hidden border w-24 h-24 bg-slate-50" />
+          ) : null}
+
+          {docUrls?.selfieSmilingUrl ? (
+            <a href={docUrls.selfieSmilingUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg overflow-hidden border">
+              <img src={docUrls.selfieSmilingUrl} alt="Smiling selfie" className="w-24 h-24 object-cover" />
+            </a>
+          ) : agent.kycSelfieSmilingUrl ? (
+            <div className="rounded-lg overflow-hidden border w-24 h-24 bg-slate-50" />
+          ) : null}
         </div>
-      )}
+        {loadingDocs && <p className="text-xs text-slate-400">Loading images…</p>}
+      </div>
 
       {/* Status */}
       <div className="flex items-center justify-between">
@@ -67,6 +102,25 @@ const KYCReviewCard = ({ submission }: KYCReviewCardProps) => {
         </span>
         {submission.listingCount > 0 && (
           <span className="text-xs text-slate-400">{submission.listingCount} listing{submission.listingCount !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+
+      {/* ID + QoreID summary */}
+      <div className="grid grid-cols-1 gap-2 text-sm">
+        <div className="text-slate-600">{agent.kycIdType && (<span className="font-medium">ID type:</span>)} {agent.kycIdType} {agent.kycIdNumber && (<span className="ml-2">{agent.kycIdNumber}</span>)}</div>
+        <div className="text-slate-600">{agent.firstName || agent.lastName ? <><span className="font-medium">Name:</span> {agent.firstName} {agent.lastName}</> : null}</div>
+        <div className="text-slate-600">
+          <span className="font-medium">Automated lookup:</span>{' '}
+          {agent.kycProviderMatched === null ? (
+            <span className="text-amber-700">Automated ID lookup unavailable — manual review only</span>
+          ) : agent.kycProviderMatched ? (
+            <span className="text-green-600">Matched ({agent.kycProviderMatchedName ?? '—'})</span>
+          ) : (
+            <span className="text-red-600">No match</span>
+          )}
+        </div>
+        {agent.kycProviderDob && (
+          <div className="text-slate-600"><span className="font-medium">DOB:</span> {agent.kycProviderDob}</div>
         )}
       </div>
 

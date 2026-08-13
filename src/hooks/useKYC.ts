@@ -22,7 +22,6 @@ export const useSubmitKYC = () => {
 };
 
 // ── Admin hooks ───────────────────────────────────────────────────────────────
-
 export const useAdminKYCSubmissions = () => {
   return useQuery({
     queryKey: queryKeys.kyc.all,
