@@ -21,7 +21,7 @@ import NeighbourhoodBrowseGrid     from '../../components/neighbourhood/Neighbou
 import DiscoverByLifestyle         from '../../components/neighbourhood/DiscoverByLifestyle';
 import NeighbourhoodMatcher        from '../../pages/public/NeighbourhoodMatcherHome';
 import LagoMarketInsights          from '../../components/neighbourhood/LagoMarketInsights';
-import TalkToAdvisor               from '../../components/neighbourhood/TalkToAdvisor';
+// import TalkToAdvisor               from '../../components/neighbourhood/TalkToAdvisor';
 
 // ─── Hero stat pills ───────────────────────────────────────────────────────
 const HERO_STATS = [
@@ -301,7 +301,7 @@ const NeighbourhoodPage = () => {
         <LagoMarketInsights />
 
         {/* ── TALK TO AN ADVISOR ─────────────────────────────────────────── */}
-        <TalkToAdvisor />
+        {/* <TalkToAdvisor /> */}
 
         {/* ── HOW IT WORKS ───────────────────────────────────────────────── */}
         <section className="rounded-2xl bg-[#0A1628] p-8 lg:p-12">

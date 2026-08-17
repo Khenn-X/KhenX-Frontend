@@ -250,12 +250,6 @@ const NAV_GROUPS: NavGroup[] = [
         icon: HelpCircle,
         desc: "Common questions from seekers and agents",
       },
-      {
-        label: "Report Fraud",
-        to: "/fraud",
-        icon: AlertTriangle,
-        desc: "Flag a suspicious listing or agent",
-      },
     ],
   },
 ];

@@ -79,6 +79,9 @@ const AgentSettingsPage = lazy(() => import("../pages/agent/SettingsPage"));
 const AdminDashboardPage = lazy(
   () => import("../pages/admin/AdminDashboardPage"),
 );
+const AdminPaymentsPage = lazy(
+  () => import("../pages/admin/AdminPaymentsPage"),
+);
 const AdminListingsPage = lazy(
   () => import("../pages/admin/AdminListingsPage"),
 );
@@ -423,6 +426,16 @@ const AppRouter = () => {
           }
         />
         <Route
+          path="/admin/payments"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <AdminPaymentsPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
           path="/admin/listings"
           element={
             <AdminRoute>
@@ -542,6 +555,16 @@ const AppRouter = () => {
             <SuperadminRoute>
               <AdminLayout>
                 <SuperadminDashboardPage />
+              </AdminLayout>
+            </SuperadminRoute>
+          }
+        />
+        <Route
+          path="/superadmin/payments"
+          element={
+            <SuperadminRoute>
+              <AdminLayout>
+                <AdminPaymentsPage />
               </AdminLayout>
             </SuperadminRoute>
           }

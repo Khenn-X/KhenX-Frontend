@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -8,17 +9,16 @@ import {
   Star,
 } from "lucide-react";
 import { useListings } from "../../hooks/useListings";
-import NaturalSearchBar from "../../components/search/NaturalSearchBar";
 import ListingCard from "../../components/listings/ListingCard";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 import PageWrapper from "../../components/layout/PageWrapper";
 import { ROUTES } from "../../constants/routes";
 import StatsBar from "../../components/home/StatsBar";
-import QuickDiscovery from "../../components/home/QuickDiscovery";
+// import QuickDiscovery from "../../components/home/QuickDiscovery";
 import NeighbourhoodGrid from "../../components/home/NeighbourhoodGrid";
 import MarketInsights from "../../components/home/MarketInsights";
-import AgentGrid from "../../components/home/AgentGrid";
-import NewsGrid from "../../components/home/NewsGrid";
+// import AgentGrid from "../../components/home/AgentGrid";
+// import NewsGrid from "../../components/home/NewsGrid";
 import FAQAccordion from "../../components/home/FAQAccordion";
 import SubscribeBar from "../../components/home/SubscribeBar";
 import NextGenSearch from "@/components/home/NextGenSearch";
@@ -166,9 +166,20 @@ const Hero = () => {
   );
 };
 // ─── Featured listings ─────────────────────────────────────────────────────────
+const FEATURED_COUNT = 4;
+
 const FeaturedListings = () => {
-  const { data, isLoading } = useListings({ limit: 8 });
-  const listings = Array.isArray(data?.data) ? data.data : [];
+  // Pull a wider pool so there's something to sample from
+  const { data, isLoading } = useListings({ limit: 20 });
+  const allListings = Array.isArray(data?.data) ? data.data : [];
+
+  // Randomly sample a handful — memoized on the listing set so it doesn't
+  // reshuffle on every re-render, only when the underlying data changes
+  const listings = useMemo(() => {
+    if (allListings.length <= FEATURED_COUNT) return allListings;
+    const shuffled = [...allListings].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, FEATURED_COUNT);
+  }, [allListings]);
 
   return (
     <section className="py-16">
@@ -193,8 +204,12 @@ const FeaturedListings = () => {
 
         {isLoading ? (
           <LoadingSpinner label="Loading listings..." className="py-16" />
+        ) : listings.length === 0 ? (
+          <p className="text-sm text-slate-500 py-16 text-center">
+            No listings available right now.
+          </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {listings.map((listing) => (
               <ListingCard key={listing._id} listing={listing} />
             ))}
@@ -251,66 +266,89 @@ const HowItWorks = () => {
 };
 
 // ─── CTA ──────────────────────────────────────────────────────────────────────
+import lagosSkyline from '../../assets/cta.jpg';
+
 const CTA = () => (
-  <section className="py-16 px-4">
+  <section className="px-4 py-16">
     <PageWrapper>
-      <div className="relative overflow-hidden rounded-2xl bg-[#0A1628] px-8 py-14 text-center">
-        {/* Ambient glow — top-right, echoes the teal accent without a literal image */}
+      <div className="relative overflow-hidden rounded-2xl bg-[#E8F7F3] px-8 py-20 text-center sm:px-12">
+
+        {/* Faint city background */}
+        <div className="absolute inset-0">
+          <img
+            src={lagosSkyline}
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover opacity-[0.52]"
+          />
+
+          {/* Soft teal/cream overlay */}
+          <div className="absolute inset-0 bg-[#E8F7F3]/80" />
+        </div>
+
+        {/* Subtle accent glow */}
         <div
-          className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-[#00C9A7]/20 blur-3xl pointer-events-none"
-          aria-hidden="true"
-        />
-        <div
-          className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-[#00C9A7]/10 blur-3xl pointer-events-none"
+          className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#00C9A7]/15 blur-3xl"
           aria-hidden="true"
         />
 
-        <div className="relative">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">
+        <div
+          className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-[#0F9D8D]/10 blur-3xl"
+          aria-hidden="true"
+        />
+
+        <div className="relative z-10">
+          <h2 className="text-2xl font-bold tracking-tight text-[#0A1628] sm:text-3xl">
             Ready to find your next home in Lagos?
           </h2>
-          <p className="mt-3 text-slate-400 max-w-md mx-auto text-sm leading-relaxed">
-            Join thousands of Lagosians who check KhenX before they pay.
+
+          <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[#526477]">
+            Find the right property and know the area before you pay.
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               to={ROUTES.LISTINGS}
-              className="w-full sm:w-auto rounded-lg bg-[#00C9A7] px-7 py-3 text-sm font-semibold text-[#0A1628] hover:bg-[#00b396] transition-colors"
+              className="w-full rounded-lg bg-[#0A1628] px-7 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-[#13243A] sm:w-auto"
             >
               Browse properties
             </Link>
-            <Link
-              to={ROUTES.SIGNUP}
-              className="w-full sm:w-auto rounded-lg border border-white/20 px-7 py-3 text-sm font-semibold text-white hover:bg-white/5 transition-colors"
+
+            <a
+              href="#ai-search"
+              className="w-full rounded-lg border border-[#0A1628]/15 bg-white/70 px-7 py-3 text-sm font-semibold text-[#0A1628] transition-all hover:-translate-y-0.5 hover:bg-white sm:w-auto"
             >
-              Create free account
-            </Link>
+              Ask KhenX AI
+            </a>
           </div>
 
-          <p className="mt-6 text-xs text-slate-500">
-            No credit card required — browsing and basic listings are always
-            free.
+          <p className="mt-5 text-xs text-[#718096]">
+            No credit card required · Free to browse
           </p>
         </div>
       </div>
     </PageWrapper>
   </section>
 );
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 const HomePage = () => (
   <div>
     <Hero />
     <StatsBar />
-    <QuickDiscovery />
-    <NextGenSearch />
+    {/* <QuickDiscovery /> */}
+
+    <div id="ai-search" className="scroll-mt-24">
+      <NextGenSearch />
+    </div>
+
     <FeaturedListings />
     {/* <IntelligenceTeaser /> */}
     <NeighbourhoodGrid />
     <MarketInsights />
     <HowItWorks />
-    <AgentGrid />
-    <NewsGrid />
+    {/* <AgentGrid /> */}
+    {/* <NewsGrid /> */}
     <FAQAccordion />
     <SubscribeBar />
     <CTA />

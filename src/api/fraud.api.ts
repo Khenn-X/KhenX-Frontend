@@ -5,8 +5,15 @@ export type FraudReportStatus = 'open' | 'investigating' | 'resolved' | 'dismiss
 
 export interface IFraudReport {
   _id: string;
-  listingId: string;
-  reportedBy?: string;
+  listingId: string | { _id: string; title?: string; areaName?: string } | null;
+  reportedBy?:
+    | string
+    | {
+        _id: string;
+        fullName?: string;
+        email?: string;
+      }
+    | null;
   reason: string;
   status: FraudReportStatus;
   adminNotes?: string;
@@ -35,7 +42,7 @@ export const fraudApi = {
 
   // Admin only — get all fraud reports
   getAllReports: async (): Promise<ApiResponse<{ reports: IFraudReport[] }>> => {
-    const { data } = await api.get('/fraud');
+    const { data } = await api.get('/admin/fraud');
     return data;
   },
 
@@ -44,7 +51,7 @@ export const fraudApi = {
     id: string,
     payload: UpdateFraudReportPayload
   ): Promise<ApiResponse<{ report: IFraudReport }>> => {
-    const { data } = await api.patch(`/fraud/${id}`, payload);
+    const { data } = await api.patch(`/admin/fraud/${id}`, payload);
     return data;
   },
 };

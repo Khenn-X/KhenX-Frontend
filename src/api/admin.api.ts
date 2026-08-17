@@ -22,6 +22,21 @@ export interface AdminStats {
   totalSeekers: number;
 }
 
+export interface PaymentTransaction {
+  _id: string;
+  paymentReference: string;
+  payerType: 'agent' | 'landlord' | 'user';
+  payerEmail: string;
+  subscriptionType: 'agent_listing' | 'landlord_listing' | 'agent_ai_usage' | 'user_ai_usage';
+  amount: number;
+  currency: string;
+  plan: string;
+  state: 'pending' | 'successful' | 'failed' | 'abandoned' | 'reversed' | 'refunded';
+  stateHistory: Array<{ state: string; changedAt: string; reason?: string }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const adminApi = {
   // Admin — get platform-wide stats
   getStats: async (): Promise<ApiResponse<{
@@ -40,6 +55,11 @@ export const adminApi = {
 
   getPendingListings: async (): Promise<ApiResponse<{ listings: IListing[] }>> => {
     const { data } = await api.get('/admin/listings', { params: { status: 'pending' } });
+    return data;
+  },
+
+  getPayments: async (state?: string): Promise<ApiResponse<{ transactions: PaymentTransaction[]; total: number }>> => {
+    const { data } = await api.get('/admin/payments', { params: state && state !== 'all' ? { state } : undefined });
     return data;
   },
 

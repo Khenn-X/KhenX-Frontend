@@ -38,7 +38,9 @@ export const ROUTES = {
 
   // Admin
   ADMIN_DASHBOARD: "/admin/dashboard",
+  ADMIN_PAYMENTS: "/admin/payments",
   ADMIN_LISTINGS: "/admin/listings",
+  ADMIN_LISTINGS_HIGHLIGHT: (id: string) => `/admin/listings?highlight=${encodeURIComponent(id)}`,
   ADMIN_KYC: "/admin/kyc",
   ADMIN_FRAUD: "/admin/fraud",
   ADMIN_AGENTS: "/admin/agents",
@@ -54,6 +56,7 @@ export const ROUTES = {
 
   // Superadmin
   SUPERADMIN_DASHBOARD: "/superadmin/dashboard",
+  SUPERADMIN_PAYMENTS: "/superadmin/payments",
   SUPERADMIN_ADMIN_REQUESTS: "/superadmin/admin-requests",
   SUPERADMIN_PROFILE: "/superadmin/profile",
   SUPERADMIN_SETTINGS: "/superadmin/settings",

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Building2, ShieldCheck, Sparkles } from 'lucide-react';
-import { useAdminStats } from '../../hooks/useAdmin';
+import { AlertTriangle, Building2, ShieldCheck, Sparkles, DollarSign, ArrowUpRight } from 'lucide-react';
+import { useAdminPayments, useAdminStats } from '../../hooks/useAdmin';
 import AdminStats from '../../components/admin/AdminStats';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorMessage from '../../components/shared/ErrorMessage';
@@ -10,7 +10,6 @@ import HeroPromoCard from '../../components/dashboard/HeroPromoCard';
 import BarChartCard from '../../components/dashboard/BarChartCard';
 import AreaChartCard from '../../components/dashboard/AreaChartCard';
 import ActiveUsersStrip from '../../components/dashboard/ActiveUsersStrip';
-import ProjectsTable from '../../components/dashboard/ProjectsTable';
 import ActivityTimelineCard from '../../components/dashboard/ActivityTimelineCard';
 
 /** Unwraps the axios → API-envelope response down to the stats payload. */
@@ -54,11 +53,37 @@ const ACCENTS: Record<string, { bar: string; chip: string; icon: string; dot: st
   },
 };
 
+
+const STATE_STYLES: Record<string, string> = {
+  successful: 'bg-emerald-50 text-emerald-700',
+  pending: 'bg-amber-50 text-amber-700',
+  failed: 'bg-rose-50 text-rose-700',
+};
+
+const STATE_DOTS: Record<string, string> = {
+  successful: 'bg-emerald-500',
+  pending: 'bg-amber-500',
+  failed: 'bg-rose-500',
+};
+
+function StatusPill({ state }: { state: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${STATE_STYLES[state] ?? 'bg-slate-100 text-slate-700'}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${STATE_DOTS[state] ?? 'bg-slate-400'}`} />
+      {state}
+    </span>
+  );
+}
+ 
+
 const AdminDashboardPage = () => {
   const { data, isLoading, isError, isFetching, dataUpdatedAt, refetch } = useAdminStats();
+  const { data: paymentData } = useAdminPayments();
   const navigate = useNavigate();
 
   const stats = extractStats(data);
+  const paymentTransactions = paymentData?.data?.transactions ?? [];
+  const paymentSummary = stats?.payments ?? { total: 0, successful: 0, pending: 0, failed: 0, totalVolume: 0 };
 
   const quickActions: QuickAction[] = [
     {
@@ -126,22 +151,19 @@ const AdminDashboardPage = () => {
           {!isLoading && !isError && stats && (
             <div className="flex flex-col items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-sm sm:items-end">
               <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
-                  totalPending > 0 ? 'text-amber-300' : 'text-white'
-                }`}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${totalPending > 0 ? 'text-amber-300' : 'text-white'
+                  }`}
               >
                 <span className="relative flex h-2 w-2">
                   {isFetching && (
                     <span
-                      className={`absolute inline-flex h-full w-full animate-ping rounded-full ${
-                        totalPending > 0 ? 'bg-amber-400' : 'bg-[#00C9A7]'
-                      } opacity-75`}
+                      className={`absolute inline-flex h-full w-full animate-ping rounded-full ${totalPending > 0 ? 'bg-amber-400' : 'bg-[#00C9A7]'
+                        } opacity-75`}
                     />
                   )}
                   <span
-                    className={`relative inline-flex h-2 w-2 rounded-full ${
-                      totalPending > 0 ? 'bg-amber-400' : 'bg-[#00C9A7]'
-                    }`}
+                    className={`relative inline-flex h-2 w-2 rounded-full ${totalPending > 0 ? 'bg-amber-400' : 'bg-[#00C9A7]'
+                      }`}
                   />
                 </span>
                 {totalPending > 0 ? `${totalPending} items need attention` : 'All caught up'}
@@ -168,7 +190,45 @@ const AdminDashboardPage = () => {
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
               Platform overview
             </h2>
-            <AdminStats stats={stats} />
+            <AdminStats
+              stats={stats}
+              onPaymentClick={() => navigate(ROUTES.ADMIN_PAYMENTS)}
+            />
+          </section>
+
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Payment volume</span>
+                <span className="rounded-full bg-[#00C9A7]/10 p-2 text-[#00A88C]"><DollarSign className="h-4 w-4" /></span>
+              </div>
+              <p className="mt-4 text-2xl font-bold text-[#0F172A]">₦{((paymentSummary.totalVolume ?? 0) / 100).toLocaleString()}</p>
+              <p className="mt-1 text-xs text-slate-500">Successful collection total</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Successful</span>
+                <span className="rounded-full bg-emerald-50 p-2 text-emerald-600"><ArrowUpRight className="h-4 w-4" /></span>
+              </div>
+              <p className="mt-4 text-2xl font-bold text-[#0F172A]">{paymentSummary.successful ?? 0}</p>
+              <p className="mt-1 text-xs text-slate-500">Approved payments</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Pending</span>
+                <span className="rounded-full bg-amber-50 p-2 text-amber-600"><ShieldCheck className="h-4 w-4" /></span>
+              </div>
+              <p className="mt-4 text-2xl font-bold text-[#0F172A]">{paymentSummary.pending ?? 0}</p>
+              <p className="mt-1 text-xs text-slate-500">Awaiting webhook or completion</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Failed</span>
+                <span className="rounded-full bg-rose-50 p-2 text-rose-600"><AlertTriangle className="h-4 w-4" /></span>
+              </div>
+              <p className="mt-4 text-2xl font-bold text-[#0F172A]">{paymentSummary.failed ?? 0}</p>
+              <p className="mt-1 text-xs text-slate-500">Rejected or failed checks</p>
+            </div>
           </section>
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -264,10 +324,101 @@ const AdminDashboardPage = () => {
           {/* ── NEW: active users strip ── */}
           <ActiveUsersStrip />
 
-          {/* ── NEW: projects + activity ── */}
+          {/* ── Recent payments + activity ── */}
+          {/* ── Recent payments + activity ── */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <ProjectsTable />
+            <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#00C9A7]/10 text-[#00A88C]">
+                    <DollarSign className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-[#0F172A]">Recent payments</h3>
+                    <p className="text-xs text-slate-400">Paystack webhook audit log · read-only</p>
+                  </div>
+                </div>
+                {paymentTransactions.length > 0 && (
+                  <span className="hidden sm:inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
+                    {paymentTransactions.length} recent
+                  </span>
+                )}
+              </div>
+
+              {paymentTransactions.length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <DollarSign className="mx-auto h-8 w-8 text-slate-200" />
+                  <p className="mt-3 text-sm text-slate-500">No payment transactions yet.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop / tablet: table */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="bg-slate-50/80">
+                        <tr>
+                          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Reference</th>
+                          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Payer</th>
+                          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Plan</th>
+                          <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</th>
+                          <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">State</th>
+                          <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Updated</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {paymentTransactions.map((tx) => (
+                          <tr key={tx._id} className="transition-colors hover:bg-slate-50/60">
+                            <td className="px-5 py-3.5">
+                              <span className="font-mono text-xs text-slate-600">{tx.paymentReference}</span>
+                            </td>
+                            <td className="px-5 py-3.5 text-slate-600">{tx.payerEmail}</td>
+                            <td className="px-5 py-3.5">
+                              <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                                {tx.subscriptionType}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3.5 text-right font-semibold text-[#0F172A]">
+                              ₦{(tx.amount / 100).toLocaleString()}
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <StatusPill state={tx.state} />
+                            </td>
+                            <td className="px-5 py-3.5 text-right text-xs text-slate-400">
+                              {new Date(tx.updatedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile: stacked cards */}
+                  <div className="sm:hidden divide-y divide-slate-100">
+                    {paymentTransactions.map((tx) => (
+                      <div key={tx._id} className="px-5 py-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-slate-700">{tx.payerEmail}</p>
+                            <p className="mt-0.5 font-mono text-xs text-slate-400">{tx.paymentReference}</p>
+                          </div>
+                          <span className="shrink-0 font-semibold text-[#0F172A]">
+                            ₦{(tx.amount / 100).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between">
+                          <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                            {tx.subscriptionType}
+                          </span>
+                          <StatusPill state={tx.state} />
+                        </div>
+                        <p className="mt-2 text-[11px] text-slate-400">
+                          {new Date(tx.updatedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
             <ActivityTimelineCard />
           </div>

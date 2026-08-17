@@ -44,18 +44,33 @@ export const NextGenSearch: React.FC = () => {
               </p>
             </div>
 
-            <h2 className="text-4xl lg:text-5xl font-extrabold text-[#0F172A] mb-6 leading-tight">
+<h2 className="text-4xl lg:text-5xl font-extrabold text-[#0F172A] mb-6 leading-tight">
               Search like you speak to a local expert.
             </h2>
 
-            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-              Our AI engine processes thousands of data points to find properties that match your specific
-              lifestyle requirements, not just bedroom counts.
-            </p>
-
             {/* Features List */}
-            <div className="space-y-5">
-              {/* Feature 1 */}
+            <div className="space-y-5 mb-8">
+              {/* Lifestyle match — single-line, icon vertically centered */}
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-[#D2F4EC]">
+                  <CheckCircle2 className="h-4 w-4 text-[#0F9D8D]" strokeWidth={2.5} />
+                </div>
+                <p className="text-base font-bold text-[#0F172A]">
+                  Find properties that match your lifestyle
+                </p>
+              </div>
+
+              {/* Key location info — single-line, icon vertically centered */}
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-[#D2F4EC]">
+                  <CheckCircle2 className="h-4 w-4 text-[#0F9D8D]" strokeWidth={2.5} />
+                </div>
+                <p className="text-base font-bold text-[#0F172A]">
+                  Key information on your desired locations across different metrics
+                </p>
+              </div>
+
+              {/* Natural Language Processing */}
               <div className="flex gap-3">
                 <div className="flex-shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-[#D2F4EC]">
                   <CheckCircle2 className="h-4 w-4 text-[#0F9D8D]" strokeWidth={2.5} />
@@ -70,7 +85,7 @@ export const NextGenSearch: React.FC = () => {
                 </div>
               </div>
 
-              {/* Feature 2 */}
+              {/* Intelligence Filters */}
               <div className="flex gap-3">
                 <div className="flex-shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-[#D2F4EC]">
                   <CheckCircle2 className="h-4 w-4 text-[#0F9D8D]" strokeWidth={2.5} />
@@ -80,7 +95,7 @@ export const NextGenSearch: React.FC = () => {
                     Intelligence Filters
                   </h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
-                    Filter by flood history, security ratings, and internet fiber availability.
+                    Filter by flood history, security ratings, internet availability, proximity to gym, schools, markets and more.
                   </p>
                 </div>
               </div>

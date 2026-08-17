@@ -9,7 +9,9 @@ interface AdminStatsProps {
     enquiries?:      { total: number };
     adminApprovals?: { pending: number };
     landlords?:      { total: number; pendingKYC: number };
+    payments?:       { total: number; successful: number; pending: number; failed: number; totalVolume: number };
   };
+  onPaymentClick?: () => void;
 }
 
 interface StatCardProps {
@@ -18,6 +20,7 @@ interface StatCardProps {
   sub?: string;
   icon: React.ElementType;
   accent?: 'amber' | 'teal' | 'red' | 'slate';
+  onClick?: () => void;
 }
 
 const accentMap = {
@@ -27,27 +30,35 @@ const accentMap = {
   slate: { bg: 'bg-white',        icon: 'bg-[#002948] text-white', value: 'text-[#002948]' },
 };
 
-const StatCard = ({ label, value, sub, icon: Icon, accent = 'slate' }: StatCardProps) => {
+const StatCard = ({ label, value, sub, icon: Icon, accent = 'slate', onClick }: StatCardProps) => {
   const c = accentMap[accent];
-  return (
-    <div className={`rounded-xl border border-slate-200/80 ${c.bg} p-3.5`}>
-      <div className="flex items-center justify-between">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 truncate">{label}</p>
-          <p className={`mt-0.5 text-xl font-bold ${c.value}`}>{value}</p>
-          {sub && <p className="mt-0.5 text-[10px] text-slate-400 truncate">{sub}</p>}
-        </div>
-        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${c.icon}`}>
-          <Icon className="h-4 w-4" />
-        </div>
+  const cardClasses = `rounded-xl border border-slate-200/80 ${c.bg} p-3.5 ${onClick ? 'cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm' : ''}`;
+
+  const content = (
+    <div className="flex items-center justify-between">
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 truncate">{label}</p>
+        <p className={`mt-0.5 text-xl font-bold ${c.value}`}>{value}</p>
+        {sub && <p className="mt-0.5 text-[10px] text-slate-400 truncate">{sub}</p>}
+      </div>
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${c.icon}`}>
+        <Icon className="h-4 w-4" />
       </div>
     </div>
   );
+
+  if (!onClick) return <div className={cardClasses}>{content}</div>;
+
+  return (
+    <button type="button" onClick={onClick} className={cardClasses}>
+      {content}
+    </button>
+  );
 };
 
-const AdminStats = ({ stats }: AdminStatsProps) => {
+const AdminStats = ({ stats, onPaymentClick }: AdminStatsProps) => {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
       <StatCard label="Total users" value={stats.users?.total ?? 0} icon={Users} accent="slate" />
       <StatCard
         label="Listings"
@@ -77,6 +88,14 @@ const AdminStats = ({ stats }: AdminStatsProps) => {
         sub="pending approval"
         icon={ShieldCheck}
         accent={(stats.adminApprovals?.pending ?? 0) > 0 ? 'amber' : 'slate'}
+      />
+      <StatCard
+        label="Payments"
+        value={stats.payments?.successful ?? 0}
+        sub={`${(stats.payments?.totalVolume ?? 0) / 100} NGN total`}
+        icon={ShieldCheck}
+        accent={(stats.payments?.pending ?? 0) > 0 ? 'teal' : 'slate'}
+        onClick={onPaymentClick}
       />
     </div>
   );

@@ -65,6 +65,7 @@ export const queryKeys = {
   admin: {
     stats: ['admin', 'stats'] as const,
     agents: ['admin', 'agents'] as const,
+    payments: ['admin', 'payments'] as const,
   },
 
   superadmin: {

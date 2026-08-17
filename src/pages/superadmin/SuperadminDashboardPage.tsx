@@ -205,7 +205,10 @@ const SuperadminDashboardPage = () => {
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
               Platform overview
             </h2>
-            <AdminStats stats={stats} />
+            <AdminStats
+              stats={stats}
+              onPaymentClick={() => navigate(ROUTES.SUPERADMIN_PAYMENTS)}
+            />
           </section>
 
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">

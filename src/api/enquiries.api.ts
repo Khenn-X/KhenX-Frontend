@@ -23,9 +23,9 @@ export const enquiriesApi = {
     return data;
   },
 
-  // Agent — get own enquiries, optionally filtered by status
+  // Agent — get own enquiries
   getMyEnquiries: async (status?: string): Promise<ApiResponse<{ enquiries: IEnquiry[] }>> => {
-    const { data } = await api.get('/enquiries/agent/my-enquiries', {
+    const { data } = await api.get('/enquiries/agent', {
       params: status ? { status } : undefined,
     });
     return data;

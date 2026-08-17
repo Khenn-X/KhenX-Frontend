@@ -37,6 +37,14 @@ export const useAdminListings = (status: AdminListingsStatus = 'all') => {
   });
 };
 
+export const useAdminPayments = (state?: string) => {
+  return useQuery({
+    queryKey: [...queryKeys.admin.payments, state ?? 'all'],
+    queryFn: () => adminApi.getPayments(state),
+    staleTime: 1000 * 60 * 2,
+  });
+};
+
 export const useAdminPendingListings = (status: AdminListingsStatus = 'pending') => {
   return useAdminListings(status);
 };

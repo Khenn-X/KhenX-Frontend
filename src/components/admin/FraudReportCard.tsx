@@ -24,6 +24,16 @@ const FraudReportCard = ({ report }: FraudReportCardProps) => {
     updateReport({ id: report._id, payload: { status, adminNotes: notes || undefined } });
   };
 
+  const reportedListingId =
+    typeof report.listingId === 'string'
+      ? report.listingId
+      : report.listingId?._id ?? null;
+
+  const reporterName =
+    typeof report.reportedBy === 'string'
+      ? null
+      : report.reportedBy?.fullName ?? null;
+
   const sc = statusConfig[report.status];
 
   return (
@@ -37,7 +47,7 @@ const FraudReportCard = ({ report }: FraudReportCardProps) => {
           <div>
             <p className="text-xs text-slate-400">Reported {timeAgo(report.createdAt)}</p>
             <p className="text-xs text-slate-400">
-              By: {report.reportedBy ? 'Registered user' : 'Anonymous'}
+              By: {reporterName ?? 'Anonymous'}
             </p>
           </div>
         </div>
@@ -53,15 +63,20 @@ const FraudReportCard = ({ report }: FraudReportCardProps) => {
       </div>
 
       {/* View listing link */}
-      <a
-        href={ROUTES.LISTING_DETAIL(report.listingId)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 text-xs text-[#00C9A7] hover:underline"
-      >
-        <ExternalLink className="h-3 w-3" />
-        View reported listing
-      </a>
+      {reportedListingId ? (
+        <a
+          href={ROUTES.ADMIN_LISTINGS_HIGHLIGHT(reportedListingId)}
+          className="inline-flex items-center gap-1.5 text-xs text-[#00C9A7] hover:underline"
+        >
+          <ExternalLink className="h-3 w-3" />
+          View reported listing
+        </a>
+      ) : (
+        <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+          <ExternalLink className="h-3 w-3" />
+          This listing is no longer available.
+        </span>
+      )}
 
       {/* Admin notes */}
       <div>

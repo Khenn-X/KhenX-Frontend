@@ -29,7 +29,23 @@ export default function FAQAccordion() {
   };
 
   return (
-    <section className="py-20 bg-green-100">
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#CFF8E9] via-[#E7FAF3] to-[#BFEFE0] py-20">
+      {/* Gradient accents */}
+      <div
+        className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-[#00C9A7]/20 blur-3xl"
+        aria-hidden="true"
+      />
+
+      <div
+        className="pointer-events-none absolute -right-24 top-1/3 h-96 w-96 rounded-full bg-[#0F9D8D]/20 blur-3xl"
+        aria-hidden="true"
+      />
+
+      <div
+        className="pointer-events-none absolute bottom-[-120px] left-1/3 h-80 w-80 rounded-full bg-[#8BE6C9]/30 blur-3xl"
+        aria-hidden="true"
+      />
+
       <PageWrapper>
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
@@ -51,9 +67,8 @@ export default function FAQAccordion() {
               return (
                 <div
                   key={f.q}
-                  className={`border-b border-slate-100 last:border-b-0 transition-colors ${
-                    isOpen ? 'bg-[#00C9A7]/[0.04]' : ''
-                  }`}
+                  className={`border-b border-slate-100 last:border-b-0 transition-colors ${isOpen ? 'bg-[#00C9A7]/[0.04]' : ''
+                    }`}
                   style={isOpen ? { borderLeft: '3px solid #00C9A7' } : { borderLeft: '3px solid transparent' }}
                 >
                   <button
@@ -62,23 +77,20 @@ export default function FAQAccordion() {
                     aria-expanded={isOpen}
                   >
                     <span
-                      className={`text-[15px] font-semibold transition-colors ${
-                        isOpen ? 'text-[#0F172A]' : 'text-[#0F172A]/90'
-                      }`}
+                      className={`text-[15px] font-semibold transition-colors ${isOpen ? 'text-[#0F172A]' : 'text-[#0F172A]/90'
+                        }`}
                     >
                       {f.q}
                     </span>
 
                     <span
-                      className={`relative shrink-0 h-6 w-6 rounded-full flex items-center justify-center transition-colors ${
-                        isOpen ? 'bg-[#00C9A7] text-white' : 'bg-slate-100 text-slate-500'
-                      }`}
+                      className={`relative shrink-0 h-6 w-6 rounded-full flex items-center justify-center transition-colors ${isOpen ? 'bg-[#00C9A7] text-white' : 'bg-slate-100 text-slate-500'
+                        }`}
                     >
                       <span className="absolute h-[1.5px] w-2.5 bg-current rounded-full" />
                       <span
-                        className={`absolute h-2.5 w-[1.5px] bg-current rounded-full transition-transform duration-200 ${
-                          isOpen ? 'scale-y-0' : 'scale-y-100'
-                        }`}
+                        className={`absolute h-2.5 w-[1.5px] bg-current rounded-full transition-transform duration-200 ${isOpen ? 'scale-y-0' : 'scale-y-100'
+                          }`}
                       />
                     </span>
                   </button>

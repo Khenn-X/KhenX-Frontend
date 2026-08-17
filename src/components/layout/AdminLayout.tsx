@@ -14,6 +14,7 @@ import {
   Bell,
   Settings,
   User,
+  DollarSign,
 } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
 import { useUIStore } from "../../store/ui.store";
@@ -75,6 +76,12 @@ const adminNavGroups: NavGroup[] = [
         to: ROUTES.ADMIN_FRAUD,
         icon: AlertTriangle,
         badgeKey: "fraud.open",
+      },
+      {
+        label: "Payments",
+        to: ROUTES.ADMIN_PAYMENTS,
+        icon: DollarSign,
+        badgeKey: null,
       },
     ],
   },
@@ -158,6 +165,12 @@ const superadminNavGroups: NavGroup[] = [
         to: ROUTES.ADMIN_FRAUD,
         icon: AlertTriangle,
         badgeKey: "fraud.open",
+      },
+      {
+        label: "Payments",
+        to: ROUTES.SUPERADMIN_PAYMENTS,
+        icon: DollarSign,
+        badgeKey: null,
       },
     ],
   },

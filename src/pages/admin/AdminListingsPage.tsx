@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Building2, RefreshCw, Search, LayoutGrid, List as ListIcon,
   MapPin, Bed, Bath, Check, X, Star, Clock, CheckCircle2, PauseCircle, XCircle,
@@ -128,7 +129,7 @@ const ActionRow = ({ listing }: { listing: IListing }) => {
   );
 };
 
-const ListingCard = ({ listing }: { listing: IListing }) => {
+const ListingCard = ({ listing, isHighlighted = false }: { listing: IListing; isHighlighted?: boolean }) => {
   const v = STATUS_VISUALS[listing.status as StatusKey];
   const summaryMeta = getListingSummaryMeta({
     propertyCategory: listing.propertyCategory,
@@ -138,7 +139,11 @@ const ListingCard = ({ listing }: { listing: IListing }) => {
   });
 
   return (
-    <div className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/70" style={{ borderTop: `3px solid ${v.bg}` }}>
+    <div
+      id={`listing-${listing._id}`}
+      className={`group overflow-hidden rounded-2xl border bg-white shadow-sm shadow-slate-200/50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/70 ${isHighlighted ? 'border-[#00C9A7] ring-2 ring-[#00C9A7]/25' : 'border-slate-200'}`}
+      style={{ borderTop: `3px solid ${v.bg}` }}
+    >
       <div className="relative h-48 overflow-hidden">
         <img src={listing.photos[0]} alt={listing.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
         <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/55 via-black/0 to-black/0" />
@@ -197,7 +202,7 @@ const ListingCard = ({ listing }: { listing: IListing }) => {
   );
 };
 
-const ListingRow = ({ listing }: { listing: IListing }) => {
+const ListingRow = ({ listing, isHighlighted = false }: { listing: IListing; isHighlighted?: boolean }) => {
   const v = STATUS_VISUALS[listing.status as StatusKey];
   const { mutate: approve, isPending: isApproving } = useApproveListing();
   const { mutate: feature, isPending: isFeaturing } = useFeatureListing();
@@ -209,7 +214,11 @@ const ListingRow = ({ listing }: { listing: IListing }) => {
   });
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200/40 transition-shadow hover:shadow-md hover:shadow-slate-200/60" style={{ borderLeft: `3px solid ${v.bg}` }}>
+    <div
+      id={`listing-${listing._id}`}
+      className={`overflow-hidden rounded-xl border bg-white shadow-sm shadow-slate-200/40 transition-shadow hover:shadow-md hover:shadow-slate-200/60 ${isHighlighted ? 'border-[#00C9A7] ring-2 ring-[#00C9A7]/25' : 'border-slate-200'}`}
+      style={{ borderLeft: `3px solid ${v.bg}` }}
+    >
       <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="relative h-20 w-full shrink-0 overflow-hidden rounded-lg sm:h-16 sm:w-24">
           <img src={listing.photos[0]} alt={listing.title} className="h-full w-full object-cover" />
@@ -274,6 +283,8 @@ export default function AdminListingsPreview() {
   const [status, setStatus] = useState<AdminTabStatus>('all');
   const [view, setView] = useState('grid');
   const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const highlightedId = searchParams.get('highlight');
 
   const { data, isLoading, isError, isFetching, refetch } = useAdminListings(status);
   const { data: allData, isLoading: isLoadingAll, isError: isErrorAll, isFetching: isFetchingAll, refetch: refetchAll } = useAdminListings('all');
@@ -303,6 +314,19 @@ export default function AdminListingsPreview() {
     }
     return list;
   }, [listings, search, status]);
+
+  useEffect(() => {
+    if (!highlightedId) return;
+
+    const frame = requestAnimationFrame(() => {
+      const element = document.getElementById(`listing-${highlightedId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [highlightedId, filtered]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 bg-[#F8FAFC] p-6">
@@ -379,11 +403,11 @@ export default function AdminListingsPreview() {
         </div>
       ) : view === 'grid' ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((l) => <ListingCard key={l._id} listing={l} />)}
+          {filtered.map((l) => <ListingCard key={l._id} listing={l} isHighlighted={highlightedId === l._id} />)}
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((l) => <ListingRow key={l._id} listing={l} />)}
+          {filtered.map((l) => <ListingRow key={l._id} listing={l} isHighlighted={highlightedId === l._id} />)}
         </div>
       )}
     </div>
