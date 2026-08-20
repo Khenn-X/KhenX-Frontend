@@ -27,7 +27,7 @@ const NeighbourhoodDetailPage = lazy(
   () => import("../pages/public/NeighbourhoodDetailPage"),
 );
 const NeighbourhoodMatchPage = lazy(
-  () => import("../pages/public/NeighbourhoodMatcherHome"),
+  () => import("../components/neighbourhood/NeighbourhoodMatcher"),
 );
 const NeighbourhoodComparePage = lazy(
   () => import("../pages/public/NeighbourhoodComparePage"),

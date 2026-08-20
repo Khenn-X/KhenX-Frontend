@@ -173,12 +173,9 @@ const FeaturedListings = () => {
   const { data, isLoading } = useListings({ limit: 20 });
   const allListings = Array.isArray(data?.data) ? data.data : [];
 
-  // Randomly sample a handful — memoized on the listing set so it doesn't
-  // reshuffle on every re-render, only when the underlying data changes
+  // Select a stable handful so rendering remains pure and predictable
   const listings = useMemo(() => {
-    if (allListings.length <= FEATURED_COUNT) return allListings;
-    const shuffled = [...allListings].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, FEATURED_COUNT);
+    return allListings.slice(0, FEATURED_COUNT);
   }, [allListings]);
 
   return (

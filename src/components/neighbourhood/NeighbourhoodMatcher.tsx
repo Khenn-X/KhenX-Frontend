@@ -1,14 +1,15 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, MapPin, ArrowUpRight, Zap, Shield, Car, Droplets,
   Trophy, Sparkles, Image as ImageIcon, Target, Compass, CheckCircle2,
 } from 'lucide-react';
-import { useAllAreas } from '../../hooks/useNeighbourhood';
+import { useAllAreas, useNeighbourhoodMatch } from '../../hooks/useNeighbourhood';
 import PageWrapper from '../../components/layout/PageWrapper';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import { cn } from '../../lib/utils';
-import type { INeighbourhoodIntelligence } from '../../types/neighbourhood.types';
+import type { INeighbourhoodIntelligence, NeighbourhoodMatchCandidate } from '../../types/neighbourhood.types';
+import { useNeighbourhoodQuizStore } from '../../store/neighbourhoodQuiz.store';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -270,6 +271,37 @@ const PreferenceChip = ({
   </div>
 );
 
+const BackendResultCard = ({ candidate, rank }: { candidate: NeighbourhoodMatchCandidate; rank: number }) => (
+  <div className="rounded-2xl border border-[#00C9A7] bg-white overflow-hidden shadow-lg shadow-[#00C9A7]/10">
+    <div className="relative h-32 overflow-hidden bg-gradient-to-br from-[#0A1628] via-[#103a52] to-[#00C9A7]/40">
+      <div className="absolute top-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#00C9A7] text-[#0A1628] text-sm font-bold">
+        #{rank}
+      </div>
+      <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-3">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <MapPin className="h-3.5 w-3.5 text-[#00C9A7] shrink-0" />
+          <span className="text-base font-bold text-white truncate">{candidate.areaName}</span>
+        </div>
+        <span className="shrink-0 text-lg font-bold text-[#00C9A7]">{candidate.matchScore}%</span>
+      </div>
+    </div>
+    <div className="p-4">
+      <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+        {candidate.commuteMinutes != null && <span>{candidate.commuteMinutes} min commute</span>}
+        {candidate.securityScore != null && <span>{candidate.securityScore.toFixed(1)}/10 security</span>}
+        {candidate.rentAvg != null && <span>{formatRent(candidate.rentAvg, candidate.rentAvg)}</span>}
+      </div>
+      {candidate.reason && <p className="mt-2 text-xs text-slate-500 line-clamp-2">{candidate.reason}</p>}
+      <Link
+        to={`/neighbourhood/${encodeURIComponent(candidate.areaName)}`}
+        className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-[#00C9A7]"
+      >
+        View profile <ArrowUpRight className="h-3.5 w-3.5" />
+      </Link>
+    </div>
+  </div>
+);
+
 // ─── Section header ──────────────────────────────────────────────────────────
 
 const SectionHeader = ({
@@ -308,9 +340,33 @@ export default function NeighbourhoodMatchPage() {
   const budget   = params.get('budget')   ?? '';
   const priority = params.get('priority') ?? '';
   const commute  = params.get('commute')  ?? '';
+  const setQuizInputs = useNeighbourhoodQuizStore((state) => state.setInputs);
 
   const { data, isLoading, isError } = useAllAreas();
+  const backendMatch = useNeighbourhoodMatch();
   const allAreas: INeighbourhoodIntelligence[] = (data as any)?.data?.areas ?? [];
+
+  const workplace = commute === 'VI'
+    ? 'Victoria Island'
+    : commute === 'Ikeja'
+      ? 'Ikeja'
+      : commute === 'Lekki'
+        ? 'Lekki'
+        : commute === 'Yaba'
+          ? 'Yaba'
+          : undefined;
+
+  useEffect(() => {
+    setQuizInputs({ budget, priority, commute, workLocation: workplace ?? '' });
+    if (budget || priority || workplace) {
+      backendMatch.mutate({ budget: budget || undefined, priority: priority || undefined, workplace, currentArea: undefined });
+    }
+  }, [budget, priority, commute, workplace, setQuizInputs]);
+
+  const backendResult = backendMatch.data?.data;
+  const backendCandidates = backendResult
+    ? [backendResult.matchedArea, ...backendResult.alternates]
+    : [];
 
   // ── The core logic: split results into "exact location matches" (user's literal
   // pick) shown first, then "other good options" that fit budget + priority but
@@ -333,7 +389,8 @@ export default function NeighbourhoodMatchPage() {
     return { exactMatches: exact, otherMatches: other };
   }, [allAreas, budget, priority, commute]);
 
-  const totalResults = exactMatches.length + otherMatches.length;
+  // Backend results are authoritative once loaded; client-side results are shown only during the loading gap.
+  const totalResults = backendResult ? backendCandidates.length : exactMatches.length + otherMatches.length;
   const PriorityIcon = priorityIcons[priority] ?? Target;
 
   return (
@@ -441,6 +498,40 @@ export default function NeighbourhoodMatchPage() {
           </div>
         ) : (
           <div className="space-y-12">
+            {backendMatch.isPending && (
+              <div className="rounded-xl border border-[#00C9A7]/20 bg-[#00C9A7]/5 px-4 py-3 text-sm text-slate-600">
+                Quick results are ready. Confirming them with the live neighbourhood matcher...
+              </div>
+            )}
+            {backendMatch.isError && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Live matching is unavailable right now. Showing quick results instead.
+              </div>
+            )}
+
+            {backendResult && (
+              <section>
+                <SectionHeader
+                  icon={Sparkles}
+                  title="Live backend matches"
+                  subtitle="These results are ranked by the shared neighbourhood matching service"
+                  count={backendCandidates.length}
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {backendCandidates.map((candidate, index) => (
+                    <BackendResultCard key={`${candidate.areaName}-${index}`} candidate={candidate} rank={index + 1} />
+                  ))}
+                </div>
+                {backendResult.summary && (
+                  <p className="mt-5 rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
+                    {backendResult.summary}
+                  </p>
+                )}
+              </section>
+            )}
+
+            {!backendResult && (
+              <>
 
             {/* ── Exact location matches — shown FIRST, always ───────────── */}
             {exactMatches.length > 0 && (
@@ -500,6 +591,8 @@ export default function NeighbourhoodMatchPage() {
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </section>
+            )}
+              </>
             )}
           </div>
         )}

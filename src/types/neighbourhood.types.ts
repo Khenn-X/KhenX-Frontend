@@ -31,7 +31,13 @@ export interface RentSummary {
   sampleSize: number;
 }
 
+export type RentByBedroom = Partial<
+  Record<RentBucketKey, RentBucketResolution>
+>;
+
 export interface INeighbourhoodIntelligence {
+   resolvedRentByBedroom: RentByBedroom;
+  lagosWideRentByBedroom: RentByBedroom;
   _id:       string;
   areaName:  string;
   displayName: string;
@@ -86,6 +92,51 @@ export interface AreaIntelligenceResponse {
 export interface CompareAreasResponse {
   areaA: INeighbourhoodIntelligence | null;
   areaB: INeighbourhoodIntelligence | null;
+}
+
+export interface NeighbourhoodMatchRequest {
+  budget?: string | number;
+  workplace?: string;
+  priority?: string | string[];
+  tags?: string[];
+  currentArea?: string;
+}
+
+export type NeighbourhoodMatchTag =
+  | 'family'
+  | 'student'
+  | 'remoteWork'
+  | 'safety'
+  | 'power'
+  | 'flood'
+  | 'commute'
+  | 'value'
+  | 'luxury';
+
+export interface NeighbourhoodMatchCandidate {
+  name: string;
+  areaName: string;
+  rentAvg: number | null;
+  commuteMinutes: number | null;
+  securityScore: number | null;
+  powerScore: number | null;
+  floodRisk: string | null;
+  matchScore: number;
+  reason: string;
+  tags: NeighbourhoodMatchTag[];
+}
+
+export interface NeighbourhoodMatchResult {
+  filters: {
+    budgetMin?: number;
+    budgetMax?: number;
+    workplace?: string;
+    tags: NeighbourhoodMatchTag[];
+    currentArea?: string;
+  };
+  matchedArea: NeighbourhoodMatchCandidate;
+  summary: string;
+  alternates: NeighbourhoodMatchCandidate[];
 }
 
 // ─── Request Payloads ────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Users } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useNeighbourhoodQuizStore } from '../../store/neighbourhoodQuiz.store';
 
 // ─── Quiz flow definition ─────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ const STEPS: Step[] = [
 
 export default function NeighbourhoodMatcher() {
   const navigate = useNavigate();
+  const setQuizInputs = useNeighbourhoodQuizStore((state) => state.setInputs);
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers]         = useState<Record<StepId, string>>({
     budget:   '',
@@ -71,6 +73,12 @@ export default function NeighbourhoodMatcher() {
   const handleNext = () => {
     if (!selected) return;
     if (isLast) {
+      setQuizInputs({
+        budget: answers.budget,
+        priority: answers.priority,
+        commute: answers.commute,
+        workLocation: answers.commute,
+      });
       // Build query and navigate (client-side, no full page reload)
       const params = new URLSearchParams(answers as Record<string, string>);
       navigate(`/neighbourhood/match?${params.toString()}`);

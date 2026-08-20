@@ -7,6 +7,7 @@ import type {
   WaitlistPayload,
   FeaturedAreasQuery,
   INeighbourhoodIntelligence,
+  NeighbourhoodMatchRequest,
 } from '../types/neighbourhood.types';
 
 export const neighbourhoodKeys = {
@@ -117,4 +118,10 @@ export const useJoinWaitlist = () =>
         error?.response?.data?.message || 'Something went wrong. Please try again.'
       );
     },
+  });
+
+export const useNeighbourhoodMatch = () =>
+  useMutation({
+    mutationFn: (payload: NeighbourhoodMatchRequest) => neighbourhoodApi.matchNeighbourhood(payload),
+    retry: false,
   });

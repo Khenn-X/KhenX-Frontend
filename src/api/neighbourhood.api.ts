@@ -5,6 +5,8 @@ import type {
   WaitlistPayload,
   ResidentReportPayload,
   FeaturedAreasQuery,
+  NeighbourhoodMatchRequest,
+  NeighbourhoodMatchResult,
 } from '../types/neighbourhood.types';
 
 export const neighbourhoodApi = {
@@ -17,6 +19,13 @@ export const neighbourhoodApi = {
   // Public — get intelligence data for a single Lagos area
   getAreaIntelligence: async (areaName: string): Promise<ApiResponse<{ area: INeighbourhoodIntelligence }>> => {
     const { data } = await api.get(`/neighbourhood/${encodeURIComponent(areaName)}`);
+    return data;
+  },
+
+  matchNeighbourhood: async (
+    payload: NeighbourhoodMatchRequest,
+  ): Promise<ApiResponse<NeighbourhoodMatchResult>> => {
+    const { data } = await api.post('/neighbourhood/match', payload);
     return data;
   },
 

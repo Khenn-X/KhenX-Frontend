@@ -22,8 +22,8 @@ import {
   BadgeCheck,
   TrendingUp,
 } from "lucide-react";
-import { useNeighbourhood } from "../../hooks/useNeighbourhood";
-import type { RentBucketKey, RentBucketResolution, RentSummary } from "../../types/neighbourhood.types";
+import { useNeighbourhood, useNeighbourhoodMatch } from "../../hooks/useNeighbourhood";
+import type { RentBucketKey, RentBucketResolution } from "../../types/neighbourhood.types";
 import WaitlistForm from "../../components/neighbourhood/WaitlistForm";
 import ResidentReportForm from "../../components/neighbourhood/ResidentReportForm";
 import NeighbourhoodImageGallery from "../../components/neighbourhood/NeighbourhoodImageGallery";
@@ -34,6 +34,7 @@ import ImageWithFallback from "../../components/shared/ImageWithFallback";
 import { cn, formatNaira } from "../../lib/utils";
 import { isResidentialPropertyType } from "../../lib/listingPropertyTypes";
 import type { IListing } from "../../types/listing.types";
+import { useNeighbourhoodQuizStore } from "../../store/neighbourhoodQuiz.store";
 
 // ─── Static reference data ────────────────────────────────────────────────────
 
@@ -223,14 +224,31 @@ export default function NeighbourhoodDetailPage() {
   const decoded = decodeURIComponent(areaName ?? "");
 
   const [compareB, setCompareB] = useState("Surulere");
-  const [budget, setBudget] = useState("");
-  const [workLocation, setWorkLocation] = useState("");
+  const storedBudget = useNeighbourhoodQuizStore((state) => state.budget);
+  const storedWorkLocation = useNeighbourhoodQuizStore((state) => state.workLocation);
+  const setQuizInputs = useNeighbourhoodQuizStore((state) => state.setInputs);
+  const budget = storedBudget;
+  const workLocation = storedWorkLocation;
 
   const { data, isLoading, isError } = useNeighbourhood(decoded);
+  const neighbourhoodMatch = useNeighbourhoodMatch();
   const area = data?.data?.area;
-  const waitlist = (data as any)?.data?.waitlistCount;
   const { data: listingsData, isLoading: isListingsLoading } = useListings({ area: decoded, limit: 6 });
   const listings = listingsData?.data ?? [];
+
+  const hasMatchInput = Boolean(budget.trim() || workLocation.trim());
+  const requestMatch = () => {
+    if (!hasMatchInput) return;
+
+    neighbourhoodMatch.mutate({
+      budget: budget.trim() || undefined,
+      workplace: workLocation.trim() || undefined,
+      currentArea: decoded,
+    });
+  };
+
+  const matchResult = neighbourhoodMatch.data?.data;
+  const matchedArea = matchResult?.matchedArea;
 
   if (isLoading) {
     return (
@@ -591,9 +609,7 @@ export default function NeighbourhoodDetailPage() {
                 <div className="mt-3 rounded-lg bg-[#00C9A7]/5 px-3 py-2">
                   <p className="text-[11px] text-slate-600">
                     <strong className="text-[#00C9A7]">AI Summary:</strong>{" "}
-                    {area.areaName} offers better infrastructure for remote
-                    work, while {compareB} is more central for mainland social
-                    life.
+                    {matchResult?.summary ?? "Generate a personalised match to see a live summary."}
                   </p>
                 </div>
                 <Link
@@ -619,7 +635,9 @@ export default function NeighbourhoodDetailPage() {
                     </label>
                     <input
                       value={budget}
-                      onChange={(e) => setBudget(e.target.value)}
+                      onChange={(e) => {
+                        setQuizInputs({ budget: e.target.value });
+                      }}
                       placeholder="e.g. 1.5M – 3M"
                       className="w-full rounded-lg bg-white/10 border border-white/15 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#00C9A7]"
                     />
@@ -630,28 +648,66 @@ export default function NeighbourhoodDetailPage() {
                     </label>
                     <input
                       value={workLocation}
-                      onChange={(e) => setWorkLocation(e.target.value)}
+                      onChange={(e) => {
+                        setQuizInputs({ workLocation: e.target.value });
+                      }}
                       placeholder="e.g. Victoria Island"
                       className="w-full rounded-lg bg-white/10 border border-white/15 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#00C9A7]"
                     />
                   </div>
                 </div>
-                <div className="rounded-xl bg-white/5 border border-white/10 p-3.5 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">
-                      Top Match for You
+                <button
+                  type="button"
+                  onClick={requestMatch}
+                  disabled={!hasMatchInput || neighbourhoodMatch.isPending}
+                  className="w-full rounded-lg bg-[#00C9A7] px-3 py-2.5 text-xs font-bold text-[#0A1628] transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {neighbourhoodMatch.isPending ? "Generating match..." : "Generate personalised match"}
+                </button>
+                <div className="mt-3 rounded-xl bg-white/5 border border-white/10 p-3.5">
+                  {neighbourhoodMatch.isPending ? (
+                    <div className="space-y-2 animate-pulse" aria-label="Generating neighbourhood match">
+                      <div className="h-3 w-2/5 rounded bg-white/10" />
+                      <div className="h-5 w-3/5 rounded bg-white/10" />
+                      <div className="h-3 w-4/5 rounded bg-white/10" />
+                    </div>
+                  ) : neighbourhoodMatch.isError ? (
+                    <div>
+                      <p className="text-sm font-semibold text-white">Couldn't generate a match right now</p>
+                      <p className="text-[11px] text-slate-400 mt-1">Check your inputs and try again.</p>
+                      <button
+                        type="button"
+                        onClick={requestMatch}
+                        className="mt-3 rounded-lg border border-white/15 px-3 py-2 text-[11px] font-semibold text-white hover:border-[#00C9A7]"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : matchedArea ? (
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">
+                          Top Match for You
+                        </p>
+                        <p className="text-sm font-bold text-white">{matchedArea.areaName}</p>
+                        {matchedArea.commuteMinutes != null && (
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            {matchedArea.commuteMinutes}-min commute
+                          </p>
+                        )}
+                        {matchedArea.reason && (
+                          <p className="text-[11px] text-slate-400 mt-0.5">{matchedArea.reason}</p>
+                        )}
+                      </div>
+                      <span className="shrink-0 rounded-full bg-[#00C9A7]/15 px-2.5 py-1 text-[10px] font-bold text-[#00C9A7]">
+                        {matchedArea.matchScore}% Match
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400">
+                      Enter a budget or workplace to generate a live neighbourhood match.
                     </p>
-                    <p className="text-sm font-bold text-white">
-                      Maryland, Lagos
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      35-min commute to VI and fits 2.5M budget for a luxury
-                      1-bed
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-[#00C9A7]/15 px-2.5 py-1 text-[10px] font-bold text-[#00C9A7]">
-                    92% Match
-                  </span>
+                  )}
                 </div>
               </div>
             </div>
