@@ -12,10 +12,20 @@ export interface ParsedListingFilters {
 
 export interface NaturalSearchPayload {
   query: string;
+  currentArea?: string;
+  budget?: string;
+  workplace?: string;
 }
 
 export interface NaturalSearchResult {
   listings: IListing[];
-  parsedFilters: ParsedListingFilters;
-  interpretedQuery: string; // Claude's plain-English summary of what it understood
+  parsedFilters?: ParsedListingFilters;
+  interpretedQuery?: string;
+  filters?: ParsedListingFilters;
+  source?: 'ai' | 'keyword' | 'none';
+  total?: number;
+  resolvedArea?: string;
+  budgetOnly?: boolean;
+  inCurrentArea?: IListing[];
+  otherAreas?: IListing[];
 }

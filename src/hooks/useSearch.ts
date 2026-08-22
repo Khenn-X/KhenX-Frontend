@@ -1,12 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
 import { searchApi } from '../api/search.api';
 import { useSearchStore } from '../store/search.store';
+import type { NaturalSearchPayload } from '../types/search.types';
 
 export const useNaturalSearch = () => {
   const { setResults, setIsSearching } = useSearchStore();
 
-  return useMutation({
-    mutationFn: (query: string) => searchApi.naturalSearch({ query }),
+  const mutation = useMutation({
+    mutationFn: (payload: NaturalSearchPayload) => searchApi.naturalSearch(payload),
     onMutate: () => {
       setIsSearching(true);
     },
@@ -18,4 +19,9 @@ export const useNaturalSearch = () => {
       setIsSearching(false);
     },
   });
+
+  return {
+    ...mutation,
+    doSearch: (payload: NaturalSearchPayload) => mutation.mutate(payload),
+  };
 };

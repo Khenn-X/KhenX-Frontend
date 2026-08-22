@@ -4,6 +4,7 @@ import type { IListing, CreateListingPayload, UpdateListingPayload } from '../ty
 import type { ParsedListingFilters } from '../types/search.types';
 
 export interface ListingsQueryParams extends ParsedListingFilters {
+  area?: string;
   page?: number;
   limit?: number;
 }

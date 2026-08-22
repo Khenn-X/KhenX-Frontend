@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
-import { ArrowUpRight, CircleDollarSign, Filter, ShieldCheck, Wallet, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
+import { ArrowUpRight, CircleDollarSign, Filter, ShieldCheck, Wallet, ChevronUp, ChevronDown, RefreshCw, RotateCcw } from 'lucide-react';
 import { useAdminPayments, useAdminStats } from '../../hooks/useAdmin';
 import PaymentTransactionDetailModal from '../../components/admin/PaymentTransactionDetailModal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
@@ -60,8 +60,20 @@ const STATE_TABS: { value: string; label: string; activeClasses: string }[] = [
 ];
 
 const AdminPaymentsPage = () => {
-  const { data: statsData, isLoading: isStatsLoading, isError: isStatsError, refetch: refetchStats } = useAdminStats();
-  const { data: paymentsData, isLoading: isPaymentsLoading, isError: isPaymentsError, refetch: refetchPayments } = useAdminPayments();
+  const {
+    data: statsData,
+    isLoading: isStatsLoading,
+    isFetching: isStatsFetching,
+    isError: isStatsError,
+    refetch: refetchStats,
+  } = useAdminStats();
+  const {
+    data: paymentsData,
+    isLoading: isPaymentsLoading,
+    isFetching: isPaymentsFetching,
+    isError: isPaymentsError,
+    refetch: refetchPayments,
+  } = useAdminPayments();
 
   // Filter state
   const [filterState, setFilterState] = useState<string>('all');
@@ -258,18 +270,35 @@ const AdminPaymentsPage = () => {
           <h1 className="mt-2 text-2xl font-bold text-[#0F172A]">Transaction overview</h1>
           <p className="mt-1 text-sm text-slate-500">Read-only audit trail for listing and AI subscription charges from Paystack.</p>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-        >
-          <Filter className="h-4 w-4 text-slate-400" />
-          {filteredTransactions.length} transactions
-          {activeFilterCount > 0 && (
-            <span className="rounded-full bg-[#00C9A7] px-2 py-0.5 text-[10px] font-bold text-[#0A1628]">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              void Promise.all([refetchStats(), refetchPayments()]);
+            }}
+            disabled={isStatsFetching || isPaymentsFetching}
+            title="Refresh payment data"
+            aria-label="Refresh payment data"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 hover:text-[#00A88C] disabled:cursor-wait disabled:opacity-60"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isStatsFetching || isPaymentsFetching ? 'animate-spin' : ''}`}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            <Filter className="h-4 w-4 text-slate-400" />
+            {filteredTransactions.length} transactions
+            {activeFilterCount > 0 && (
+              <span className="rounded-full bg-[#00C9A7] px-2 py-0.5 text-[10px] font-bold text-[#0A1628]">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Quick-filter state tabs — always visible, no need to open the filter panel */}

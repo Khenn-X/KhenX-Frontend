@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useListings } from "../../hooks/useListings";
 import {
@@ -9,17 +9,13 @@ import {
   Car,
   Droplets,
   AlertTriangle,
-  CheckCircle2,
   ArrowUpRight,
   Bookmark,
   Share2,
   GitCompareArrows,
   FileDown,
-  Search,
   Truck,
-  Star,
   Quote,
-  BadgeCheck,
   TrendingUp,
 } from "lucide-react";
 import { useNeighbourhood, useNeighbourhoodMatch } from "../../hooks/useNeighbourhood";
@@ -30,11 +26,12 @@ import NeighbourhoodImageGallery from "../../components/neighbourhood/Neighbourh
 import { IntelligenceSummaryDisplay } from "../../components/neighbourhood/IntelligenceSummaryDisplay";
 import PageWrapper from "../../components/layout/PageWrapper";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
-import ImageWithFallback from "../../components/shared/ImageWithFallback";
 import { cn, formatNaira } from "../../lib/utils";
-import { isResidentialPropertyType } from "../../lib/listingPropertyTypes";
-import type { IListing } from "../../types/listing.types";
 import { useNeighbourhoodQuizStore } from "../../store/neighbourhoodQuiz.store";
+import { useNaturalSearch } from "../../hooks/useSearch";
+import type { NaturalSearchResult } from "../../types/search.types";
+import ListingCard from "../../components/listings/ListingCard";
+import { resolveSearchArea } from "../../lib/search-area";
 
 // ─── Static reference data ────────────────────────────────────────────────────
 
@@ -113,6 +110,14 @@ const SuitabilityBar = ({ label, score }: { label: string; score: number }) => (
   </div>
 );
 
+const ListingGrid = ({ listings }: { listings: NaturalSearchResult['listings'] }) => (
+  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {listings.map((listing) => (
+      <ListingCard key={listing._id} listing={listing} />
+    ))}
+  </div>
+);
+
 // ─── Dashboard stat card ──────────────────────────────────────────────────────
 
 const DashboardStat = ({
@@ -140,50 +145,6 @@ const DashboardStat = ({
   </div>
 );
 
-// ─── Listing card ─────────────────────────────────────────────────────────────
-
-const ListingCard = ({ listing }: { listing: IListing }) => {
-  const isResidential = isResidentialPropertyType(listing.propertyType);
-  const pricePeriodLabel = listing.pricePeriod === 'monthly' ? 'mo' : listing.pricePeriod === 'nightly' ? 'night' : 'yr';
-  const subtitle = listing.estateName ? `${listing.estateName}, ${listing.areaName}` : listing.areaName;
-  const coverImage = listing.photos?.[0];
-
-  return (
-    <Link to={`/listings/${listing._id}`} className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm transition-shadow hover:shadow-md">
-      <div className="relative overflow-hidden h-36">
-        <ImageWithFallback
-          src={coverImage}
-          alt={listing.title}
-          className="h-full w-full object-cover"
-        />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-        <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-[#00C9A7] px-2.5 py-1 text-[10px] font-bold text-[#0A1628]">
-          <BadgeCheck className="h-3 w-3" /> Verified Listing
-        </span>
-        <Bookmark className="absolute top-3 right-3 h-4 w-4 text-white drop-shadow" />
-      </div>
-      <div className="p-4">
-        <p className="font-bold text-[#0F172A] text-sm">{listing.title}</p>
-        <p className="text-[#00C9A7] font-bold text-sm mt-0.5">
-          {formatNaira(listing.price)}/{pricePeriodLabel}
-        </p>
-        <p className="text-xs text-slate-400 mt-1">
-          {isResidential
-            ? `${listing.bedrooms === 0 ? 'Self-contained' : `${listing.bedrooms} Beds`} · ${listing.bathrooms} Baths · ${listing.propertyType}`
-            : `${listing.propertyType} • ${subtitle}`}
-        </p>
-        <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
-          <p className="line-clamp-2">{subtitle}</p>
-        </div>
-        <span className="mt-3 inline-flex w-full justify-center rounded-lg border border-slate-200 py-2 text-xs font-semibold text-[#0A1628] hover:border-[#00C9A7] hover:text-[#00C9A7] transition-colors">
-          View Property Details
-        </span>
-      </div>
-    </Link>
-  );
-};
-
-// ─── Not found state ──────────────────────────────────────────────────────────
 
 const AreaNotFound = ({ areaName }: { areaName: string }) => (
   <PageWrapper className="py-16">
@@ -229,6 +190,33 @@ export default function NeighbourhoodDetailPage() {
   const setQuizInputs = useNeighbourhoodQuizStore((state) => state.setInputs);
   const budget = storedBudget;
   const workLocation = storedWorkLocation;
+  const [propertyQuery, setPropertyQuery] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('khenx-neighbourhood-quiz');
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as Partial<{
+        budget: string;
+        priority: string;
+        commute: string;
+        workLocation: string;
+      }>;
+
+      if (parsed.budget || parsed.workLocation || parsed.priority || parsed.commute) {
+        useNeighbourhoodQuizStore.setState((state) => ({
+          ...state,
+          budget: parsed.budget ?? state.budget,
+          priority: parsed.priority ?? state.priority,
+          commute: parsed.commute ?? state.commute,
+          workLocation: parsed.workLocation ?? state.workLocation,
+        }));
+      }
+    } catch {
+      // ignore invalid persisted state
+    }
+  }, []);
 
   const { data, isLoading, isError } = useNeighbourhood(decoded);
   const neighbourhoodMatch = useNeighbourhoodMatch();
@@ -236,19 +224,47 @@ export default function NeighbourhoodDetailPage() {
   const { data: listingsData, isLoading: isListingsLoading } = useListings({ area: decoded, limit: 6 });
   const listings = listingsData?.data ?? [];
 
-  const hasMatchInput = Boolean(budget.trim() || workLocation.trim());
-  const requestMatch = () => {
-    if (!hasMatchInput) return;
+  const propertySearch = useNaturalSearch();
 
-    neighbourhoodMatch.mutate({
-      budget: budget.trim() || undefined,
-      workplace: workLocation.trim() || undefined,
-      currentArea: decoded,
-    });
-  };
+  const hasMatchInput = Boolean(budget.trim() || workLocation.trim());
 
   const matchResult = neighbourhoodMatch.data?.data;
   const matchedArea = matchResult?.matchedArea;
+
+  const requestedSearchArea = resolveSearchArea({
+    currentArea: decoded,
+    workplace: workLocation,
+    refinement: propertyQuery,
+  });
+
+  const submitPropertySearch = async () => {
+    const payload = {
+      query: propertyQuery.trim(),
+      currentArea: requestedSearchArea,
+      budget: budget.trim() || undefined,
+      workplace: workLocation.trim() || undefined,
+    };
+
+    const searchPromise = propertySearch.mutateAsync(payload);
+    const matchPromise = hasMatchInput
+      ? neighbourhoodMatch.mutateAsync({
+          budget: budget.trim() || undefined,
+          workplace: workLocation.trim() || undefined,
+          currentArea: decoded,
+        })
+      : Promise.resolve();
+
+    await Promise.all([searchPromise, matchPromise]);
+  };
+
+  const propertySearchResult: NaturalSearchResult | undefined = propertySearch.data?.data;
+  const propertyListings = propertySearchResult?.listings ?? [];
+  const inCurrentAreaListings = propertySearchResult?.inCurrentArea ?? [];
+  const otherAreaListings = propertySearchResult?.otherAreas ?? [];
+  const isBudgetOnlySearch = propertySearchResult?.budgetOnly === true;
+  const resolvedSearchArea = propertySearchResult?.resolvedArea?.trim() || requestedSearchArea;
+  const isOutsideSearch = Boolean(resolvedSearchArea && resolvedSearchArea.toLowerCase() !== decoded.toLowerCase());
+  const showSoftNudge = !isOutsideSearch && !propertySearch.isPending && propertySearchResult != null && propertyListings.length <= 2 && matchedArea != null && matchedArea.areaName.toLowerCase() !== decoded.toLowerCase();
 
   if (isLoading) {
     return (
@@ -620,93 +636,122 @@ export default function NeighbourhoodDetailPage() {
                 </Link>
               </div>
 
-              {/* Personalized Recommendations */}
-              <div className="rounded-2xl bg-[#0A1628] p-5">
+              {/* Unified in-neighbourhood property search */}
+              <div className="rounded-2xl bg-[#0A1628] p-5 lg:col-span-2">
                 <div className="flex items-center gap-2 mb-4">
                   <MapPin className="h-4 w-4 text-[#00C9A7]" />
                   <p className="text-sm font-bold text-white">
-                    Personalized Area Recommendations
+                    Find a property in {area.areaName}
                   </p>
                 </div>
-                <div className="space-y-3 mb-4">
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase tracking-wide mb-1 block">
-                      Your Budget (Annual)
-                    </label>
-                    <input
-                      value={budget}
-                      onChange={(e) => {
-                        setQuizInputs({ budget: e.target.value });
-                      }}
-                      placeholder="e.g. 1.5M – 3M"
-                      className="w-full rounded-lg bg-white/10 border border-white/15 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#00C9A7]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase tracking-wide mb-1 block">
-                      Workplace Location
-                    </label>
-                    <input
-                      value={workLocation}
-                      onChange={(e) => {
-                        setQuizInputs({ workLocation: e.target.value });
-                      }}
-                      placeholder="e.g. Victoria Island"
-                      className="w-full rounded-lg bg-white/10 border border-white/15 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#00C9A7]"
-                    />
-                  </div>
+                <div className="grid gap-3 md:grid-cols-3 mb-3">
+                  <input
+                    aria-label="Property budget"
+                    value={budget}
+                    onChange={(e) => setQuizInputs({ budget: e.target.value })}
+                    placeholder="Budget, e.g. ₦2M - ₦4M"
+                    className="w-full rounded-lg bg-white/10 border border-white/15 px-3 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#00C9A7]"
+                  />
+                  <input
+                    aria-label="Workplace location"
+                    value={workLocation}
+                    onChange={(e) => setQuizInputs({ workLocation: e.target.value })}
+                    placeholder="Workplace, e.g. Lekki"
+                    className="w-full rounded-lg bg-white/10 border border-white/15 px-3 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#00C9A7]"
+                  />
+                  <input
+                    aria-label="Property refinement"
+                    value={propertyQuery}
+                    onChange={(e) => setPropertyQuery(e.target.value)}
+                    placeholder="Optional: 3-bed with good power"
+                    className="w-full rounded-lg bg-white/10 border border-white/15 px-3 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#00C9A7]"
+                  />
                 </div>
                 <button
                   type="button"
-                  onClick={requestMatch}
-                  disabled={!hasMatchInput || neighbourhoodMatch.isPending}
+                  onClick={submitPropertySearch}
+                  disabled={propertySearch.isPending}
                   className="w-full rounded-lg bg-[#00C9A7] px-3 py-2.5 text-xs font-bold text-[#0A1628] transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {neighbourhoodMatch.isPending ? "Generating match..." : "Generate personalised match"}
+                  {propertySearch.isPending ? "Searching live listings..." : "Search properties"}
                 </button>
-                <div className="mt-3 rounded-xl bg-white/5 border border-white/10 p-3.5">
-                  {neighbourhoodMatch.isPending ? (
-                    <div className="space-y-2 animate-pulse" aria-label="Generating neighbourhood match">
-                      <div className="h-3 w-2/5 rounded bg-white/10" />
-                      <div className="h-5 w-3/5 rounded bg-white/10" />
+                <div className="mt-4">
+                  {propertySearch.isPending ? (
+                    <div className="space-y-2 animate-pulse" aria-label="Searching properties">
+                      <div className="h-4 w-2/5 rounded bg-white/10" />
                       <div className="h-3 w-4/5 rounded bg-white/10" />
                     </div>
-                  ) : neighbourhoodMatch.isError ? (
-                    <div>
-                      <p className="text-sm font-semibold text-white">Couldn't generate a match right now</p>
-                      <p className="text-[11px] text-slate-400 mt-1">Check your inputs and try again.</p>
-                      <button
-                        type="button"
-                        onClick={requestMatch}
-                        className="mt-3 rounded-lg border border-white/15 px-3 py-2 text-[11px] font-semibold text-white hover:border-[#00C9A7]"
-                      >
-                        Retry
+                  ) : propertySearch.isError ? (
+                    <div className="rounded-xl border border-red-300/20 bg-red-400/10 p-3">
+                      <p className="text-sm font-semibold text-white">Couldn't search properties right now</p>
+                      <button type="button" onClick={submitPropertySearch} className="mt-2 text-xs font-semibold text-[#00C9A7] hover:underline">
+                        Retry search
                       </button>
                     </div>
-                  ) : matchedArea ? (
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">
-                          Top Match for You
+                  ) : propertySearchResult ? (
+                    <>
+                      {isBudgetOnlySearch ? (
+                        inCurrentAreaListings.length === 0 && otherAreaListings.length === 0 ? (
+                          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                            <p className="text-sm font-semibold text-white">No listings match</p>
+                            <p className="mt-1 text-xs text-slate-400">Try adjusting your budget or search.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-5">
+                            {inCurrentAreaListings.length > 0 && (
+                              <section>
+                                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#8ff3df]">
+                                  In {area.areaName}
+                                </h3>
+                                <ListingGrid listings={inCurrentAreaListings} />
+                              </section>
+                            )}
+                            {otherAreaListings.length > 0 && (
+                              <section>
+                                <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-300">
+                                  Also available in other areas
+                                </h3>
+                                <ListingGrid listings={otherAreaListings} />
+                              </section>
+                            )}
+                          </div>
+                        )
+                      ) : (
+                        <>
+                      {isOutsideSearch && (
+                        <p className="mb-3 rounded-lg border border-[#00C9A7]/25 bg-[#00C9A7]/10 px-3 py-2 text-xs font-semibold text-[#8ff3df]">
+                          Showing results for {resolvedSearchArea} (outside {area.areaName})
                         </p>
-                        <p className="text-sm font-bold text-white">{matchedArea.areaName}</p>
-                        {matchedArea.commuteMinutes != null && (
-                          <p className="text-[11px] text-slate-400 mt-0.5">
-                            {matchedArea.commuteMinutes}-min commute
-                          </p>
-                        )}
-                        {matchedArea.reason && (
-                          <p className="text-[11px] text-slate-400 mt-0.5">{matchedArea.reason}</p>
+                      )}
+                      {propertyListings.length === 0 ? (
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                        <p className="text-sm font-semibold text-white">No listings match</p>
+                        <p className="mt-1 text-xs text-slate-400">Try adjusting your budget or search.</p>
+                        {showSoftNudge && (
+                          <Link to={`/neighbourhood/${encodeURIComponent(matchedArea.areaName)}`} className="mt-2 inline-block text-xs font-semibold text-[#00C9A7] hover:underline">
+                            Explore {matchedArea.areaName} for a broader fit
+                          </Link>
                         )}
                       </div>
-                      <span className="shrink-0 rounded-full bg-[#00C9A7]/15 px-2.5 py-1 text-[10px] font-bold text-[#00C9A7]">
-                        {matchedArea.matchScore}% Match
-                      </span>
-                    </div>
+                      ) : (
+                      <div>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {propertyListings.map((listing) => (
+                            <ListingCard key={listing._id} listing={listing} />
+                          ))}
+                        </div>
+                        {showSoftNudge && (
+                          <Link to={`/neighbourhood/${encodeURIComponent(matchedArea.areaName)}`} className="mt-3 inline-block text-xs font-semibold text-[#00C9A7] hover:underline">
+                            Looking beyond {area.areaName}? Explore {matchedArea.areaName}
+                          </Link>
+                        )}
+                      </div>
+                      )}
+                        </>
+                      )}
+                    </>
                   ) : (
-                    <p className="text-[11px] text-slate-400">
-                      Enter a budget or workplace to generate a live neighbourhood match.
-                    </p>
+                    <p className="text-xs text-slate-400">Search live listings within {area.areaName} using your budget and an optional refinement.</p>
                   )}
                 </div>
               </div>
@@ -739,31 +784,6 @@ export default function NeighbourhoodDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-bold text-[#0F172A] mb-4">
-              AI Property Discovery
-            </p>
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <input
-                placeholder="e.g. Show me 3-bed under 2M with good power"
-                className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2.5 text-xs focus:outline-none focus:border-[#00C9A7]"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-lg border border-slate-200 p-2.5">
-                <p className="text-[11px] font-semibold text-[#0F172A]">
-                  Herbert Macaulay Apt
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  85M · 24hr Power Match
-                </p>
-              </div>
-              <div className="rounded-lg border border-dashed border-slate-200 flex items-center justify-center text-[10px] text-slate-300">
-                More matches
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* ── Relocation Assistant Banner ──────────────────────────────────── */}
@@ -856,7 +876,7 @@ export default function NeighbourhoodDetailPage() {
                       {f.name}
                     </p>
                     <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-[#00C9A7]" />{" "}
+                      <span className="h-3 w-3 text-[#00C9A7]">✓</span>{" "}
                       {f.tag}
                     </span>
                   </div>
@@ -955,7 +975,7 @@ export default function NeighbourhoodDetailPage() {
                   </p>
                   <p className="text-xs text-slate-400">{agent.spec}</p>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                    <span className="h-3 w-3 fill-amber-400 text-amber-400">★</span>
                     <span className="text-xs font-semibold text-[#0F172A]">
                       {agent.rating}
                     </span>

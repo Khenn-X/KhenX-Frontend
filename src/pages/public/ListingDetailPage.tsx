@@ -605,7 +605,7 @@ const ListingDetailPage = () => {
     undefined;
 
   const { data: similarData } = useListings({
-    areaName: listing?.areaName,
+    area: listing?.areaName,
     listingType: listing?.listingType,
     limit: 4,
   });
