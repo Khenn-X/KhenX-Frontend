@@ -1,7 +1,7 @@
 import { useSearchParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, MapPin, Zap, Shield, Car, Droplets,
-  Clock, Database, TrendingUp, ArrowUpRight, RefreshCw,
+  ArrowLeft, Zap, Shield, Car, Droplets, Plus, X, Check,
+  Clock, Database, TrendingUp, ArrowUpRight, SlidersHorizontal, Sparkles,
 } from 'lucide-react';
 import { useNeighbourhood } from '../../hooks/useNeighbourhood';
 import PageWrapper from '../../components/layout/PageWrapper';
@@ -9,16 +9,22 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import { timeAgo, cn } from '../../lib/utils';
 import type { INeighbourhoodIntelligence } from '../../types/neighbourhood.types';
 import { LAGOS_AREAS } from '../../constants/lagos-areas';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Config ─────────────────────────────────────────────────────────────────
+
+const MAX_AREAS = 5;
+const MIN_AREAS = 2;
+const COL_WIDTH = 260;
+const LABEL_WIDTH = 160;
+
+type Intel = INeighbourhoodIntelligence;
+type ColState = { data: Intel | null; loading: boolean };
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 const scoreColor = (s?: number | null) =>
-  s == null ? 'text-slate-400' : s >= 7.5 ? 'text-[#00C9A7]' : s >= 5 ? 'text-amber-400' : 'text-red-400';
-
-const barColor = (s?: number | null) =>
-  s == null ? 'bg-slate-200' : s >= 7.5 ? 'bg-[#00C9A7]' : s >= 5 ? 'bg-amber-400' : 'bg-red-400';
-
+  s == null ? 'text-slate-400' : s >= 7.5 ? 'text-[#00C9A7]' : s >= 5 ? 'text-amber-500' : 'text-red-500';
 
 const formatRent = (min?: number | null, max?: number | null) => {
   if (!min || !max) return '—';
@@ -27,316 +33,478 @@ const formatRent = (min?: number | null, max?: number | null) => {
   return `${fmt(min)} – ${fmt(max)}/yr`;
 };
 
-// Winner highlight — which side is better for a given score
-const winner = (a?: number | null, b?: number | null): 'a' | 'b' | 'tie' => {
-  if (a == null && b == null) return 'tie';
-  if (a == null) return 'b';
-  if (b == null) return 'a';
-  if (a > b) return 'a';
-  if (b > a) return 'b';
-  return 'tie';
+const floodLabel = (r?: string | null) => (r ? r.charAt(0).toUpperCase() + r.slice(1) : '—');
+const floodTextColor = (r?: string | null) =>
+  r === 'low' ? 'text-[#00C9A7]' : r === 'medium' ? 'text-amber-500' : r === 'high' ? 'text-red-500' : 'text-slate-400';
+
+// ─── Silent per-area data loader (keeps hook usage clean per column) ───────
+
+const AreaDataLoader = ({
+  area, onUpdate,
+}: { area: string; onUpdate: (area: string, s: ColState) => void }) => {
+  const { data, isLoading } = useNeighbourhood(area);
+  const intel = data?.data?.area ?? null;
+  useEffect(() => {
+    onUpdate(area, { data: intel, loading: isLoading });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [area, intel, isLoading]);
+  return null;
 };
 
-const floodScore = (r?: string | null) =>
-  r === 'low' ? 10 : r === 'medium' ? 5 : r === 'high' ? 0 : null;
+// ─── Attribute filter pills — these decide which feature rows show ────────
 
-// ─── Score comparison row ─────────────────────────────────────────────────────
+const ROW_DEFS = [
+  { key: 'power', label: 'Power' },
+  { key: 'security', label: 'Security' },
+  { key: 'commute', label: 'Commute' },
+  { key: 'flood', label: 'Flood Risk' },
+  { key: 'rent', label: 'Avg Rent' },
+  { key: 'travel', label: 'Travel Times' },
+  { key: 'sources', label: 'Data Sources' },
+  { key: 'updated', label: 'Last Updated' },
+] as const;
 
-const CompareRow = ({
-  icon: Icon,
-  label,
-  scoreA,
-  scoreB,
-  sub,
-}: {
-  icon: React.ElementType;
-  label: string;
-  scoreA?: number | null;
-  scoreB?: number | null;
-  sub?: string;
-}) => {
-  const w = winner(scoreA, scoreB);
+type RowKey = typeof ROW_DEFS[number]['key'];
+const DEFAULT_VISIBLE: RowKey[] = ['power', 'security', 'commute', 'flood', 'rent'];
+
+const FilterPills = ({
+  visible, onToggle,
+}: { visible: Set<RowKey>; onToggle: (k: RowKey) => void }) => (
+  <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    {ROW_DEFS.map((r) => {
+      const active = visible.has(r.key);
+      return (
+        <button
+          key={r.key}
+          onClick={() => onToggle(r.key)}
+          className={cn(
+            'shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors',
+            active
+              ? 'bg-[#0A1628] border-[#0A1628] text-white'
+              : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+          )}
+        >
+          {r.label}
+        </button>
+      );
+    })}
+  </div>
+);
+
+// ─── "Choose neighbourhoods" modal — the single control for add/remove ────
+
+const NeighbourhoodPickerModal = ({
+  currentAreas, onSave, onClose,
+}: { currentAreas: string[]; onSave: (next: string[]) => void; onClose: () => void }) => {
+  const [selected, setSelected] = useState<string[]>(currentAreas);
+  const canSave = selected.length >= MIN_AREAS;
+
+  const toggle = (a: string) => {
+    setSelected((prev) => {
+      if (prev.includes(a)) return prev.filter((x) => x !== a);
+      if (prev.length >= MAX_AREAS) return prev;
+      return [...prev, a];
+    });
+  };
 
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-4 border-b border-slate-100 last:border-0">
-      {/* Left score */}
-      <div className={cn('space-y-1.5', w === 'b' && 'opacity-50')}>
-        <div className="flex items-center justify-between">
-          <span className={cn('text-sm font-bold tabular-nums', scoreColor(scoreA))}>
-            {scoreA != null ? scoreA.toFixed(1) : '—'}
-          </span>
-          {w === 'a' && <span className="text-[10px] font-bold text-[#00C9A7]">WINNER</span>}
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-white p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-xl font-bold text-[#0F172A]">Choose neighbourhoods</h3>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={!canSave}
+              onClick={() => { onSave(selected); onClose(); }}
+              className={cn(
+                'rounded-full px-5 py-2 text-sm font-bold text-white transition-colors',
+                canSave ? 'bg-[#00C9A7] hover:bg-[#00b596]' : 'bg-slate-300 cursor-not-allowed'
+              )}
+            >
+              Save
+            </button>
+            <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden flex justify-end">
-          <div
-            className={cn('h-full rounded-full', barColor(scoreA))}
-            style={{ width: scoreA != null ? `${(scoreA / 10) * 100}%` : '0%' }}
-          />
-        </div>
-      </div>
+        <p className="text-xs text-slate-400 mb-4">
+          Pick {MIN_AREAS}–{MAX_AREAS} areas to compare. {selected.length} selected{!canSave && ` — need at least ${MIN_AREAS}`}.
+        </p>
 
-      {/* Centre label */}
-      <div className="flex flex-col items-center gap-1 shrink-0 w-24">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
-          <Icon className="h-4 w-4 text-slate-500" />
-        </div>
-        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-center leading-tight">{label}</span>
-        {sub && <span className="text-[9px] text-slate-300 text-center">{sub}</span>}
-      </div>
-
-      {/* Right score */}
-      <div className={cn('space-y-1.5', w === 'a' && 'opacity-50')}>
-        <div className="flex items-center justify-between">
-          {w === 'b' && <span className="text-[10px] font-bold text-[#00C9A7]">WINNER</span>}
-          <span className={cn('text-sm font-bold tabular-nums ml-auto', scoreColor(scoreB))}>
-            {scoreB != null ? scoreB.toFixed(1) : '—'}
-          </span>
-        </div>
-        <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-          <div
-            className={cn('h-full rounded-full', barColor(scoreB))}
-            style={{ width: scoreB != null ? `${(scoreB / 10) * 100}%` : '0%' }}
-          />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {LAGOS_AREAS.map((a) => {
+            const isSelected = selected.includes(a);
+            const disabled = !isSelected && selected.length >= MAX_AREAS;
+            return (
+              <button
+                key={a}
+                disabled={disabled}
+                onClick={() => toggle(a)}
+                className={cn(
+                  'relative rounded-xl border-2 overflow-hidden text-left transition-colors',
+                  isSelected ? 'border-[#00C9A7]' : disabled ? 'border-slate-100 opacity-50 cursor-not-allowed' : 'border-slate-200 hover:border-slate-300'
+                )}
+              >
+                <div className="h-20 bg-gradient-to-br from-[#0A1628] to-[#1a3a5c]" />
+                {isSelected && (
+                  <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#00C9A7]">
+                    <Check className="h-3 w-3 text-white" />
+                  </span>
+                )}
+                <div className="px-2.5 py-2">
+                  <span className="text-xs font-semibold text-[#0F172A]">{a}</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
   );
 };
 
-// ─── Area header card ─────────────────────────────────────────────────────────
+// ─── Row label (sticky, plain — matches the reference's flat list style) ──
 
-const AreaHeader = ({ area }: { area: INeighbourhoodIntelligence; side: 'a' | 'b' }) => {
-  const rent = formatRent(area.avgRentMin, area.avgRentMax);
-  return (
-    <div className="relative rounded-xl overflow-hidden h-40">
-      {area.imageUrl ? (
-        <img src={area.imageUrl} alt={area.areaName} className="absolute inset-0 h-full w-full object-cover" />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0A1628] to-[#1a3a5c]" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628] via-[#0A1628]/40 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 p-4">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <MapPin className="h-3 w-3 text-[#00C9A7]" />
-          <span className="text-xs text-slate-400">Lagos</span>
-        </div>
-        <h3 className="text-lg font-bold text-white">{area.areaName}</h3>
-        <div className="flex items-center gap-2 mt-1">
-          {area.overallScore != null && (
-            <span className="rounded-full bg-[#00C9A7]/20 border border-[#00C9A7]/30 px-2 py-0.5 text-xs font-bold text-[#00C9A7]">
-              {area.overallScore.toFixed(1)} overall
-            </span>
-          )}
-          {rent !== '—' && (
-            <span className="text-[10px] text-slate-300 flex items-center gap-1">
-              <TrendingUp className="h-2.5 w-2.5" /> {rent}
-            </span>
-          )}
-        </div>
+const RowLabel = ({ icon: Icon, label }: { icon: React.ElementType; label: string }) => (
+  <div style={{ width: LABEL_WIDTH }} className="sticky left-0 z-10 flex items-center gap-2 bg-white pr-3 py-4">
+    <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+    <span className="text-sm font-semibold text-slate-600">{label}</span>
+  </div>
+);
+
+// a hairline that spans every column, including the sticky label column
+const RowDivider = () => <div style={{ gridColumn: '1 / -1' }} className="border-t border-dashed border-slate-200" />;
+
+// ─── Card badge (Best Power / Safest / Best Commute / Cheapest) ───────────
+
+const badgeFor = (area: string, dataMap: Record<string, ColState>, areas: string[]): { label: string; color: string } | null => {
+  const entries = areas.map((a) => ({ a, intel: dataMap[a]?.data ?? null }));
+  const checks: { label: string; color: string; get: (i: Intel) => number | null; lowerBetter?: boolean }[] = [
+    { label: 'Featured', color: 'text-amber-500', get: (i) => i.powerScore ?? null },
+    { label: 'Safest', color: 'text-sky-500', get: (i) => i.securityScore ?? null },
+    { label: 'Best Commute', color: 'text-purple-500', get: (i) => i.commuteScore ?? null },
+    { label: 'Cheapest', color: 'text-[#00C9A7]', get: (i) => i.avgRentMin ?? null, lowerBetter: true },
+  ];
+  for (const c of checks) {
+    const vals = entries.filter((e) => e.intel).map((e) => ({ a: e.a, v: c.get(e.intel as Intel) })).filter((v) => v.v != null) as { a: string; v: number }[];
+    if (vals.length < 2) continue;
+    const best = c.lowerBetter ? Math.min(...vals.map((v) => v.v)) : Math.max(...vals.map((v) => v.v));
+    const winners = vals.filter((v) => v.v === best);
+    if (winners.length === 1 && winners[0].a === area) return { label: c.label, color: c.color };
+  }
+  return null;
+};
+
+// ─── Area card ──────────────────────────────────────────────────────────────
+
+const AreaCard = ({
+  area, state, areas, dataMap,
+}: { area: string; state: ColState | undefined; areas: string[]; dataMap: Record<string, ColState> }) => {
+  const intel = state?.data;
+
+  if (state?.loading || !state) {
+    return <div style={{ width: COL_WIDTH }} className="rounded-xl border border-slate-200 bg-white h-64 animate-pulse" />;
+  }
+
+  if (!intel) {
+    return (
+      <div style={{ width: COL_WIDTH }} className="rounded-xl border border-dashed border-slate-300 bg-white h-64 flex items-center justify-center px-4 text-center">
+        <p className="text-xs text-slate-400">No data yet for {area}.</p>
       </div>
+    );
+  }
+
+  const badge = badgeFor(area, dataMap, areas);
+  const metaLine = [
+    intel.totalReportsUsed != null ? `${intel.totalReportsUsed} reports analysed` : null,
+    intel.lastUpdated ? `updated ${timeAgo(intel.lastUpdated)}` : null,
+  ].filter(Boolean).join(' · ');
+
+  return (
+    <div style={{ width: COL_WIDTH }} className="rounded-xl border border-slate-200 bg-white p-3">
+      <div className="relative h-32 rounded-lg overflow-hidden mb-3">
+        {intel.imageUrl ? (
+          <img src={intel.imageUrl} alt={intel.areaName} className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0A1628] to-[#1a3a5c]" />
+        )}
+      </div>
+
+      <h3 className="text-sm font-bold text-[#0F172A] truncate">{intel.areaName}</h3>
+      {badge && <span className={cn('text-[10px] font-bold uppercase tracking-wide', badge.color)}>{badge.label}</span>}
+
+      <div className="flex items-baseline gap-1.5 mt-2">
+        {intel.overallScore != null && (
+          <span className="text-lg font-bold text-[#0F172A]">{intel.overallScore.toFixed(1)}</span>
+        )}
+        <span className="text-[11px] text-slate-400">overall score</span>
+      </div>
+
+      {metaLine && <p className="text-xs text-slate-400 leading-snug mt-1.5 line-clamp-2">{metaLine}</p>}
+
       <Link
-        to={`/neighbourhood/${encodeURIComponent(area.areaName)}`}
-        className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        to={`/neighbourhood/${encodeURIComponent(intel.areaName)}`}
+        className="inline-flex items-center gap-1 text-xs font-semibold text-[#00C9A7] hover:underline pt-2"
       >
-        <ArrowUpRight className="h-3.5 w-3.5 text-white" />
+        More details <ArrowUpRight className="h-3 w-3" />
       </Link>
     </div>
   );
 };
 
-// ─── Area selector (swap areas) ───────────────────────────────────────────────
-
-const AreaSelector = ({
-  value,
-  onChange,
-  exclude,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  exclude: string;
-}) => (
-  <select
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-[#0F172A] focus:border-[#00C9A7] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/20"
-  >
-    {LAGOS_AREAS.filter((a) => a.toLowerCase() !== exclude.toLowerCase()).map((a) => (
-      <option key={a} value={a}>{a}</option>
-    ))}
-  </select>
-);
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function NeighbourhoodComparePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [areaA, setAreaA] = useState(searchParams.get('a') ?? 'Yaba');
-  const [areaB, setAreaB] = useState(searchParams.get('b') ?? 'Lekki Phase 1');
 
-  const { data: dataA, isLoading: loadingA } = useNeighbourhood(areaA);
-  const { data: dataB, isLoading: loadingB } = useNeighbourhood(areaB);
+  const initialAreas = useMemo(() => {
+    const fromUrl = searchParams.get('areas');
+    if (fromUrl) {
+      const list = fromUrl.split(',').map((a) => decodeURIComponent(a)).filter(Boolean);
+      if (list.length >= MIN_AREAS) return list.slice(0, MAX_AREAS);
+    }
+    return ['Yaba', 'Lekki Phase 1'];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const intelA = dataA?.data?.area;
-  const intelB = dataB?.data?.area;
+  const [areas, setAreas] = useState<string[]>(initialAreas);
+  const [dataMap, setDataMap] = useState<Record<string, ColState>>({});
+  const [visible, setVisible] = useState<Set<RowKey>>(new Set(DEFAULT_VISIBLE));
+  const [pillsOpen, setPillsOpen] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  const isLoading = loadingA || loadingB;
+  const handleUpdate = useCallback((area: string, s: ColState) => {
+    setDataMap((prev) => ({ ...prev, [area]: s }));
+  }, []);
 
-  const handleSwap = () => {
-    const newA = areaB;
-    const newB = areaA;
-    setAreaA(newA);
-    setAreaB(newB);
-    setSearchParams({ a: newA, b: newB });
+  const handleSaveAreas = (next: string[]) => {
+    setAreas(next);
+    setSearchParams({ areas: next.map(encodeURIComponent).join(',') });
   };
 
-  const handleChangeA = (v: string) => {
-    setAreaA(v);
-    setSearchParams({ a: v, b: areaB });
+  const toggleRow = (k: RowKey) => {
+    setVisible((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
   };
 
-  const handleChangeB = (v: string) => {
-    setAreaB(v);
-    setSearchParams({ a: areaA, b: v });
-  };
+  const isLoading = areas.some((a) => !dataMap[a] || dataMap[a].loading);
+  const anyData = areas.some((a) => dataMap[a]?.data);
+
+  const hubs: { key: keyof NonNullable<Intel['travelTimesToHubs']>; label: string }[] = [
+    { key: 'victoriaIsland', label: 'Victoria Island' },
+    { key: 'ikeja', label: 'Ikeja' },
+    { key: 'lekki', label: 'Lekki' },
+    { key: 'maryland', label: 'Maryland' },
+  ];
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {areas.map((a) => <AreaDataLoader key={a} area={a} onUpdate={handleUpdate} />)}
+      {pickerOpen && (
+        <NeighbourhoodPickerModal
+          currentAreas={areas}
+          onSave={handleSaveAreas}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
 
       {/* Header */}
-      <div className="bg-[#0A1628] pt-12 pb-16">
-        <PageWrapper>
+      <div className="relative bg-[#0A1628] pt-12 pb-16 overflow-hidden">
+        <div className="pointer-events-none absolute -top-20 -right-20 h-72 w-72 rounded-full bg-[#00C9A7]/10 blur-3xl" />
+        <PageWrapper className="relative">
           <Link to="/neighbourhood" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-6">
             <ArrowLeft className="h-4 w-4" /> All Neighbourhoods
           </Link>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Compare Neighbourhoods</h1>
-          <p className="text-slate-400 text-sm">Side-by-side intelligence scores for any two Lagos areas.</p>
-
-          {/* Selectors */}
-          <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-end gap-3 max-w-xl">
-            <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wide">Area A</label>
-              <AreaSelector value={areaA} onChange={handleChangeA} exclude={areaB} />
-            </div>
-            <button
-              onClick={handleSwap}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/8 border border-white/10 hover:bg-white/15 transition-colors mb-0.5"
-              title="Swap areas"
-            >
-              <RefreshCw className="h-4 w-4 text-slate-400" />
-            </button>
-            <div>
-              <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wide">Area B</label>
-              <AreaSelector value={areaB} onChange={handleChangeB} exclude={areaA} />
-            </div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/8 border border-white/10 px-2.5 py-1 mb-3">
+            <Sparkles className="h-3 w-3 text-[#00C9A7]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Live comparison</span>
           </div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Compare Neighbourhoods</h1>
+          <p className="text-slate-400 text-sm">Line up Lagos areas side by side, and pick which stats matter to you.</p>
         </PageWrapper>
       </div>
 
       <PageWrapper className="py-10 -mt-6">
-        {isLoading ? (
-          <LoadingSpinner label="Fetching intelligence data…" className="py-16" />
-        ) : (
-          <div className="space-y-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6">
+          {/* Compare header row */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-[#0F172A]">Compare</h2>
+            <button
+              onClick={() => setPillsOpen((o) => !o)}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:border-slate-300 transition-colors"
+              title="Toggle attribute filters"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+            </button>
+          </div>
 
-            {/* Area headers */}
-            <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-stretch">
-              <div>{intelA ? <AreaHeader area={intelA} side="a" /> : (
-                <div className="rounded-xl border border-dashed border-slate-300 h-40 flex items-center justify-center">
-                  <p className="text-sm text-slate-400">No data for {areaA}</p>
+          {pillsOpen && <FilterPills visible={visible} onToggle={toggleRow} />}
+
+          {isLoading && !anyData ? (
+            <LoadingSpinner label="Fetching intelligence data…" className="py-16" />
+          ) : (
+            <div className="mt-6 overflow-x-auto">
+              <div
+                className="grid"
+                style={{ gridTemplateColumns: `${LABEL_WIDTH}px repeat(${areas.length}, ${COL_WIDTH}px)`, columnGap: 16 }}
+              >
+                {/* Row 0: + button and area cards */}
+                <div style={{ width: LABEL_WIDTH }} className="sticky left-0 z-10 bg-white flex items-center justify-center pb-6">
+                  <button
+                    onClick={() => setPickerOpen(true)}
+                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#00C9A7] text-[#00C9A7] hover:bg-[#00C9A7]/10 transition-colors"
+                    title="Choose neighbourhoods"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </button>
                 </div>
-              )}</div>
-              <div className="flex items-center justify-center w-12">
-                <span className="text-xs font-bold text-slate-400 bg-slate-100 rounded-full px-3 py-1.5">VS</span>
-              </div>
-              <div>{intelB ? <AreaHeader area={intelB} side="b" /> : (
-                <div className="rounded-xl border border-dashed border-slate-300 h-40 flex items-center justify-center">
-                  <p className="text-sm text-slate-400">No data for {areaB}</p>
-                </div>
-              )}</div>
-            </div>
+                {areas.map((a) => (
+                  <div key={`card-${a}`} className="pb-6">
+                    <AreaCard area={a} state={dataMap[a]} areas={areas} dataMap={dataMap} />
+                  </div>
+                ))}
 
-            {/* Score comparisons */}
-            {(intelA || intelB) && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Intelligence Scores</h2>
+                <RowDivider />
 
-                <CompareRow
-                  icon={Zap}
-                  label="Power Supply"
-                  scoreA={intelA?.powerScore}
-                  scoreB={intelB?.powerScore}
-                  sub={[
-                    intelA?.powerAvgHoursDaily != null ? `${intelA.powerAvgHoursDaily}h` : null,
-                    intelB?.powerAvgHoursDaily != null ? `${intelB.powerAvgHoursDaily}h` : null,
-                  ].filter(Boolean).join(' vs ') || undefined}
-                />
-                <CompareRow icon={Shield}   label="Security"      scoreA={intelA?.securityScore}          scoreB={intelB?.securityScore} />
-                <CompareRow icon={Car}      label="Commute"       scoreA={intelA?.commuteScore}           scoreB={intelB?.commuteScore} />
-                <CompareRow icon={Droplets} label="Flood Safety"  scoreA={floodScore(intelA?.floodRisk)}  scoreB={floodScore(intelB?.floodRisk)} />
-              </div>
-            )}
+                {/* Power */}
+                {visible.has('power') && (
+                  <>
+                    <RowLabel icon={Zap} label="Power Supply" />
+                    {areas.map((a) => {
+                      const score = dataMap[a]?.data?.powerScore;
+                      const hours = dataMap[a]?.data?.powerAvgHoursDaily;
+                      return (
+                        <div key={`power-${a}`} className="py-4">
+                          <div className="flex items-baseline gap-1">
+                            <span className={cn('text-base font-bold', scoreColor(score))}>{score != null ? score.toFixed(1) : '—'}</span>
+                            <span className="text-xs text-slate-400">/10</span>
+                          </div>
+                          {hours != null && <div className="text-xs text-slate-400 mt-0.5">{hours}h/day avg</div>}
+                        </div>
+                      );
+                    })}
+                    <RowDivider />
+                  </>
+                )}
 
-            {/* Travel times side by side */}
-            {(intelA?.travelTimesToHubs || intelB?.travelTimesToHubs) && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6">
-                <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Commute Times (minutes)</h2>
-                <div className="space-y-0">
-                  {[
-                    { label: 'Victoria Island', keyA: intelA?.travelTimesToHubs?.victoriaIsland, keyB: intelB?.travelTimesToHubs?.victoriaIsland },
-                    { label: 'Ikeja',           keyA: intelA?.travelTimesToHubs?.ikeja,          keyB: intelB?.travelTimesToHubs?.ikeja },
-                    { label: 'Lekki',           keyA: intelA?.travelTimesToHubs?.lekki,          keyB: intelB?.travelTimesToHubs?.lekki },
-                    { label: 'Maryland',        keyA: intelA?.travelTimesToHubs?.maryland,        keyB: intelB?.travelTimesToHubs?.maryland },
-                  ].map(({ label, keyA, keyB }) => {
-                    const w = winner(
-                      keyA != null ? -keyA : null,  // lower = better for commute
-                      keyB != null ? -keyB : null
-                    );
-                    return (
-                      <div key={label} className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 py-3 border-b border-slate-100 last:border-0">
-                        <span className={cn('text-sm font-bold text-right', w === 'a' ? 'text-[#00C9A7]' : 'text-slate-600', w === 'b' && 'opacity-50')}>
-                          {keyA != null ? `${keyA} min` : '—'}
-                        </span>
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wide text-center w-20 shrink-0">{label}</span>
-                        <span className={cn('text-sm font-bold', w === 'b' ? 'text-[#00C9A7]' : 'text-slate-600', w === 'a' && 'opacity-50')}>
-                          {keyB != null ? `${keyB} min` : '—'}
+                {/* Security */}
+                {visible.has('security') && (
+                  <>
+                    <RowLabel icon={Shield} label="Security" />
+                    {areas.map((a) => {
+                      const score = dataMap[a]?.data?.securityScore;
+                      return (
+                        <div key={`security-${a}`} className="py-4">
+                          <span className={cn('text-base font-bold', scoreColor(score))}>{score != null ? score.toFixed(1) : '—'}</span>
+                          <span className="text-xs text-slate-400"> /10</span>
+                        </div>
+                      );
+                    })}
+                    <RowDivider />
+                  </>
+                )}
+
+                {/* Commute */}
+                {visible.has('commute') && (
+                  <>
+                    <RowLabel icon={Car} label="Commute" />
+                    {areas.map((a) => {
+                      const score = dataMap[a]?.data?.commuteScore;
+                      return (
+                        <div key={`commute-${a}`} className="py-4">
+                          <span className={cn('text-base font-bold', scoreColor(score))}>{score != null ? score.toFixed(1) : '—'}</span>
+                          <span className="text-xs text-slate-400"> /10</span>
+                        </div>
+                      );
+                    })}
+                    <RowDivider />
+                  </>
+                )}
+
+                {/* Flood */}
+                {visible.has('flood') && (
+                  <>
+                    <RowLabel icon={Droplets} label="Flood Risk" />
+                    {areas.map((a) => {
+                      const risk = dataMap[a]?.data?.floodRisk;
+                      return (
+                        <div key={`flood-${a}`} className="py-4">
+                          <span className={cn('text-sm font-bold', floodTextColor(risk))}>{floodLabel(risk)} risk</span>
+                        </div>
+                      );
+                    })}
+                    <RowDivider />
+                  </>
+                )}
+
+                {/* Rent */}
+                {visible.has('rent') && (
+                  <>
+                    <RowLabel icon={TrendingUp} label="Avg Rent" />
+                    {areas.map((a) => (
+                      <div key={`rent-${a}`} className="py-4">
+                        <span className="text-sm font-bold text-[#0F172A]">
+                          {formatRent(dataMap[a]?.data?.avgRentMin, dataMap[a]?.data?.avgRentMax)}
                         </span>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
+                    <RowDivider />
+                  </>
+                )}
+
+                {/* Travel times */}
+                {visible.has('travel') && hubs.map((hub, hubIdx) => (
+                  <div key={hub.key} style={{ display: 'contents' }}>
+                    <RowLabel icon={Car} label={hub.label} />
+                    {areas.map((a) => {
+                      const val = dataMap[a]?.data?.travelTimesToHubs?.[hub.key];
+                      return (
+                        <div key={`${hub.key}-${a}`} className="py-4">
+                          <span className="text-sm font-bold text-[#0F172A] tabular-nums">{val != null ? `${val} min` : '—'}</span>
+                        </div>
+                      );
+                    })}
+                    {hubIdx === hubs.length - 1 && <RowDivider />}
+                  </div>
+                ))}
+
+                {/* Data sources */}
+                {visible.has('sources') && (
+                  <>
+                    <RowLabel icon={Database} label="Data Sources" />
+                    {areas.map((a) => (
+                      <div key={`sources-${a}`} className="py-4">
+                        <span className="text-xs text-slate-500">{dataMap[a]?.data?.dataSources?.join(', ') || '—'}</span>
+                      </div>
+                    ))}
+                    <RowDivider />
+                  </>
+                )}
+
+                {/* Last updated */}
+                {visible.has('updated') && (
+                  <>
+                    <RowLabel icon={Clock} label="Last Updated" />
+                    {areas.map((a) => (
+                      <div key={`updated-${a}`} className="py-4">
+                        <span className="text-xs text-slate-500">
+                          {dataMap[a]?.data?.lastUpdated ? timeAgo(dataMap[a]!.data!.lastUpdated) : '—'}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
-            )}
-
-            {/* Metadata footer */}
-            <div className="grid grid-cols-2 gap-4">
-              {[intelA, intelB].map((area, i) => area && (
-                <div key={i} className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">{area.areaName}</p>
-                  {area.lastUpdated && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                      <Clock className="h-3 w-3" /> Updated {timeAgo(area.lastUpdated)}
-                    </div>
-                  )}
-                  {area.dataSources?.length > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                      <Database className="h-3 w-3" /> {area.dataSources.join(', ')}
-                    </div>
-                  )}
-                  {area.totalReportsUsed != null && (
-                    <div className="text-xs text-slate-400">{area.totalReportsUsed} reports used</div>
-                  )}
-                  <Link
-                    to={`/neighbourhood/${encodeURIComponent(area.areaName)}`}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#00C9A7] hover:underline pt-1"
-                  >
-                    Full profile <ArrowUpRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              ))}
             </div>
-
-          </div>
-        )}
+          )}
+        </div>
       </PageWrapper>
     </div>
   );

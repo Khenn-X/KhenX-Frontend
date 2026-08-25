@@ -60,7 +60,7 @@ export default function MarketInsights() {
               {stats.map((s) => (
                 <div
                   key={s.label}
-                  className="rounded-xl bg-white/5 border border-white/5 p-4"
+                  className="rounded-xl border border-white/5 bg-white/5 p-4 transition-all duration-300 ease-out hover:-translate-y-1 hover:rotate-[1deg] hover:skew-y-[-0.8deg] hover:border-[#00C9A7]/40 hover:bg-white/8 hover:shadow-[0_18px_38px_rgba(0,201,167,0.08)]"
                 >
                   <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
                     {s.label}
@@ -79,7 +79,7 @@ export default function MarketInsights() {
             </div>
           </div>
           {/* Right — white card, the only light surface in the section */}
-          <div className="lg:col-span-2 rounded-2xl bg-white p-14 shadow-xl mt-4 lg:mt-0">
+          <div className="lg:col-span-2 mt-4 rounded-2xl bg-white p-14 shadow-xl lg:mt-0">
             <div className="flex items-center justify-between mb-5">
               <h5 className="text-base font-bold text-[#0F172A]">
                 Infrastructure Reliability Index

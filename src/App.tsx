@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import AppRouter from './routes/AppRouter';
 import { useMe } from './hooks/useAuth';
+import CustomCursor from './components/shared/CustomCursor';
 
 /**
  * Bootstraps the authenticated user into Zustand on app load.
@@ -34,6 +35,9 @@ const App = () => {
 
       {/* All routes */}
       <AppRouter />
+
+      {/* Desktop-only pointer enhancement */}
+      <CustomCursor />
 
       {/* Global toast notifications */}
       <Toaster

@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -17,6 +18,7 @@ import StatsBar from "../../components/home/StatsBar";
 // import QuickDiscovery from "../../components/home/QuickDiscovery";
 import NeighbourhoodGrid from "../../components/home/NeighbourhoodGrid";
 import MarketInsights from "../../components/home/MarketInsights";
+import { useFeaturedAreas } from "../../hooks/useNeighbourhood";
 // import AgentGrid from "../../components/home/AgentGrid";
 // import NewsGrid from "../../components/home/NewsGrid";
 import FAQAccordion from "../../components/home/FAQAccordion";
@@ -24,12 +26,78 @@ import SubscribeBar from "../../components/home/SubscribeBar";
 import NextGenSearch from "@/components/home/NextGenSearch";
 import hero from "../../assets/download.jfif";
 import lagos from "../../assets/Lagos.jfif";
+import MountReveal from "../../components/shared/MountReveal";
+import StaggerReveal from "../../components/shared/StaggerReveal";
 
-
+const HERO_AREA_ORDER = [
+  "Lekki Phase 1",
+  "Ajah",
+  "Ikoyi",
+  "Victoria Island",
+] as const;
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 const Hero = () => {
   const navigate = useNavigate();
+  const { data } = useFeaturedAreas();
+  const featuredAreas = useMemo(() => data?.data?.areas ?? [], [data]);
+  const [isHovering, setIsHovering] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const heroAreas = useMemo(() => {
+    const ordered = HERO_AREA_ORDER.map(
+      (name) => featuredAreas.find((area) => area.areaName === name) ?? null,
+    ).filter(Boolean) as typeof featuredAreas;
+
+    if (ordered.length >= 2) return ordered;
+
+    return featuredAreas.slice(0, 4);
+  }, [featuredAreas]);
+
+  const activeArea = heroAreas[activeIndex] ?? heroAreas[0] ?? null;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setIsReady(true), 700);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  useEffect(() => {
+    if (!isReady || isHovering || heroAreas.length < 2) return;
+
+    const intervalId = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % heroAreas.length);
+    }, 4500);
+
+    return () => window.clearInterval(intervalId);
+  }, [heroAreas.length, isHovering, isReady]);
+
+  const formatFloodRisk = (value?: string | null) => {
+    if (!value) return "—";
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  };
+
+  const formatPowerValue = (value?: number | null) => {
+    if (value == null) return "—";
+    return `${value.toFixed(1)}/10`;
+  };
+
+  const formatSecurityValue = (value?: number | null) => {
+    if (value == null) return "—";
+    return `${value.toFixed(1)} / 10`;
+  };
+
+  const formatCommuteValue = (area: typeof activeArea | null) => {
+    if (!area) return "—";
+    const travelMinutes =
+      area.travelTimesToHubs?.victoriaIsland ??
+      area.travelTimesToHubs?.lekki ??
+      area.travelTimesToHubs?.ikeja;
+    if (travelMinutes != null) return `${travelMinutes} min`;
+    if (area.commuteScore != null) return `${area.commuteScore.toFixed(1)}/10`;
+    return "—";
+  };
+
   return (
     <section className="relative z-10 overflow-hidden min-h-[80vh] flex items-center px-4 py-16">
       {" "}
@@ -46,7 +114,7 @@ const Hero = () => {
       <PageWrapper className="relative z-10 w-full max-w-7xl">
         <div className="grid lg:grid-cols-[1.5fr_1fr] gap-12 items-center">
           {/* ── Left: copy (now the dominant column) ── */}
-          <div className="text-left">
+          <MountReveal direction="left" className="text-left">
             <div className="inline-flex items-center gap-2 mb-6">
               <span className="h-1.5 w-1.5 rounded-full bg-[#00C9A7]" />
               <span className="text-xs font-semibold text-[#00C9A7] uppercase tracking-[0.2em]">
@@ -54,16 +122,34 @@ const Hero = () => {
               </span>
             </div>
 
-            <h1 className="text-6xl sm:text-7xl font-bold text-white leading-[1.05] tracking-tight">
-              Before you pay,
-              <br />
-              <span className="text-[#00C9A7]">know the area.</span>
+            <h1 className="text-6xl sm:text-8xl font-bold text-white leading-[1.05] tracking-tight">
+              <span className="block">Know it.</span>
+              <span className="block ml-10">Trust it.</span>
+              <span className="relative ml-18 inline-block text-[#00C9A7]">
+                Live it.
+                <svg
+                  viewBox="0 0 220 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="absolute left-0 -bottom-3 w-full h-[28px]"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M2 14
+       C38 11, 72 7, 108 7
+       C145 7, 181 9, 218 12
+       C181 10, 145 10, 108 11
+       C70 12, 36 16, 2 17
+       C5 16, 4 15, 2 14 Z"
+                    fill="#00C9A7"
+                  />
+                </svg>
+              </span>
             </h1>
 
             <p className="mt-7 text-slate-300 text-xl leading-relaxed max-w-lg">
-              Every listing on KhenX comes with a verified read on the
-              neighbourhood — power supply, flood risk, security, commute — so
-              you find out what a place is really like before you commit to it.
+              Real insights on power, flood risk, security and commute — so you
+              choose the right place with confidence.
             </p>
 
             <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -92,68 +178,117 @@ const Hero = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </MountReveal>
 
           {/* ── Right: smaller image + floating intelligence card ── */}
-          <div className="relative hidden lg:block">
-            <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-              <img
-                src={lagos}
-                alt="A Lagos neighbourhood street"
-                className="w-full h-[380px] object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/60 via-transparent to-transparent" />
-            </div>
-
-            {/* Pin marker on the image, tethering the card to a location */}
-            <div className="absolute top-[38%] left-[42%]">
-              <span className="absolute inline-flex h-2.5 w-2.5 rounded-full bg-[#00C9A7] animate-ping" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#00C9A7] ring-4 ring-[#00C9A7]/20" />
-            </div>
-
-            {/* The signature element: a live-feeling intelligence card */}
-            <div className="absolute -bottom-6 -left-6 w-60 rounded-xl bg-[#0F1F35]/95 backdrop-blur-md border border-white/10 shadow-2xl p-4 animate-[fadeUp_0.6s_ease-out]">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
-                  Lekki Phase 1
-                </span>
-                <span className="flex items-center gap-1.5 text-[9px] font-semibold text-[#00C9A7] uppercase tracking-wide">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-[#00C9A7] animate-ping" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#00C9A7]" />
-                  </span>
-                  Live
-                </span>
-              </div>
-
-              <div className="space-y-2.5">
-                {[
-                  { label: "Power supply", value: "92%", color: "#F5B155" },
-                  { label: "Flood risk", value: "Low", color: "#5B9BD5" },
-                  { label: "Security", value: "8.4 / 10", color: "#00C9A7" },
-                  { label: "Commute", value: "24 min", color: "#A78BFA" },
-                ].map((row) => (
-                  <div
-                    key={row.label}
-                    className="flex items-center justify-between"
+          <MountReveal
+            direction="right"
+            className="relative hidden lg:block"
+            delayMs={100}
+          >
+            <div
+              className="relative"
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
+            >
+              <AnimatePresence mode="wait">
+                {activeArea && (
+                  <motion.div
+                    key={activeArea.areaName}
+                    initial={{ x: 80, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -80, opacity: 0 }}
+                    transition={{ duration: 0.55, ease: "easeInOut" }}
+                    className="relative"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: row.color }}
+                    <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+                      <img
+                        src={activeArea.imageUrl || lagos}
+                        alt={`${activeArea.areaName} neighbourhood`}
+                        className="w-full h-[380px] object-cover"
                       />
-                      <span className="text-[11px] text-slate-300">
-                        {row.label}
-                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/60 via-transparent to-transparent" />
                     </div>
-                    <span className="text-[11px] font-semibold text-white">
-                      {row.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
+
+                    {/* The signature element: a live-feeling intelligence card */}
+                    <div className="absolute -bottom-6 -left-6 w-60 rounded-xl bg-[#0F1F35]/95 backdrop-blur-md border border-white/10 shadow-2xl p-4 animate-[fadeUp_0.6s_ease-out]">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                          {activeArea.areaName}
+                        </span>
+                        <span className="flex items-center gap-1.5 text-[9px] font-semibold text-[#00C9A7] uppercase tracking-wide">
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className="absolute inline-flex h-full w-full rounded-full bg-[#00C9A7] animate-ping" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#00C9A7]" />
+                          </span>
+                          Live
+                        </span>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {[
+                          {
+                            label: "Power supply",
+                            value: formatPowerValue(activeArea.powerScore),
+                            color: "#F5B155",
+                          },
+                          {
+                            label: "Flood risk",
+                            value: formatFloodRisk(activeArea.floodRisk),
+                            color: "#5B9BD5",
+                          },
+                          {
+                            label: "Security",
+                            value: formatSecurityValue(
+                              activeArea.securityScore,
+                            ),
+                            color: "#00C9A7",
+                          },
+                          {
+                            label: "Commute",
+                            value: formatCommuteValue(activeArea),
+                            color: "#A78BFA",
+                          },
+                        ].map((row) => (
+                          <div
+                            key={row.label}
+                            className="flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="h-1.5 w-1.5 rounded-full"
+                                style={{ backgroundColor: row.color }}
+                              />
+                              <span className="text-[11px] text-slate-300">
+                                {row.label}
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-semibold text-white">
+                              {row.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {heroAreas.length > 1 && (
+                <div className="mt-5 flex items-center justify-center gap-2">
+                  {heroAreas.map((area, index) => (
+                    <button
+                      key={area.areaName}
+                      type="button"
+                      aria-label={`Show ${area.areaName}`}
+                      onClick={() => setActiveIndex(index)}
+                      className={`h-2 w-2 rounded-full transition-all ${index === activeIndex ? "w-6 bg-[#00C9A7]" : "bg-white/35"}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
+          </MountReveal>
         </div>
       </PageWrapper>
       <style>{`
@@ -171,7 +306,11 @@ const FEATURED_COUNT = 4;
 const FeaturedListings = () => {
   // Pull a wider pool so there's something to sample from
   const { data, isLoading } = useListings({ limit: 20 });
-  const allListings = Array.isArray(data?.data) ? data.data : [];
+
+  const allListings = useMemo(
+    () => (Array.isArray(data?.data) ? data.data : []),
+    [data],
+  );
 
   // Select a stable handful so rendering remains pure and predictable
   const listings = useMemo(() => {
@@ -206,11 +345,11 @@ const FeaturedListings = () => {
             No listings available right now.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StaggerReveal className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {listings.map((listing) => (
               <ListingCard key={listing._id} listing={listing} />
             ))}
-          </div>
+          </StaggerReveal>
         )}
       </PageWrapper>
     </section>
@@ -263,13 +402,12 @@ const HowItWorks = () => {
 };
 
 // ─── CTA ──────────────────────────────────────────────────────────────────────
-import lagosSkyline from '../../assets/cta.jpg';
+import lagosSkyline from "../../assets/cta.jpg";
 
 const CTA = () => (
   <section className="px-4 py-16">
     <PageWrapper>
       <div className="relative overflow-hidden rounded-2xl bg-[#E8F7F3] px-8 py-20 text-center sm:px-12">
-
         {/* Faint city background */}
         <div className="absolute inset-0">
           <img
@@ -329,27 +467,52 @@ const CTA = () => (
 );
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-const HomePage = () => (
-  <div>
-    <Hero />
-    <StatsBar />
-    {/* <QuickDiscovery /> */}
+const HomePage = () => {
+  useLayoutEffect(() => {
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
 
-    <div id="ai-search" className="scroll-mt-24">
-      <NextGenSearch />
+    const resetScroll = () => {
+      if (!window.location.hash) {
+        const previousScrollBehavior =
+          document.documentElement.style.scrollBehavior;
+        document.documentElement.style.scrollBehavior = "auto";
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        document.documentElement.style.scrollBehavior = previousScrollBehavior;
+      }
+    };
+
+    resetScroll();
+    window.addEventListener("pageshow", resetScroll);
+
+    return () => {
+      window.removeEventListener("pageshow", resetScroll);
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
+
+  return (
+    <div>
+      <Hero />
+      <StatsBar />
+      {/* <QuickDiscovery /> */}
+
+      <div id="ai-search" className="scroll-mt-24">
+        <NextGenSearch />
+      </div>
+
+      <FeaturedListings />
+      {/* <IntelligenceTeaser /> */}
+      <NeighbourhoodGrid />
+      <MarketInsights />
+      <HowItWorks />
+      {/* <AgentGrid /> */}
+      {/* <NewsGrid /> */}
+      <FAQAccordion />
+      <SubscribeBar />
+      <CTA />
     </div>
-
-    <FeaturedListings />
-    {/* <IntelligenceTeaser /> */}
-    <NeighbourhoodGrid />
-    <MarketInsights />
-    <HowItWorks />
-    {/* <AgentGrid /> */}
-    {/* <NewsGrid /> */}
-    <FAQAccordion />
-    <SubscribeBar />
-    <CTA />
-  </div>
-);
+  );
+};
 
 export default HomePage;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import PageWrapper from '../../components/layout/PageWrapper';
+import StaggerReveal from '../../components/shared/StaggerReveal';
 import { useFeaturedAreas } from '../../hooks/useNeighbourhood';
 import type { INeighbourhoodIntelligence } from '../../types/neighbourhood.types';
 
@@ -112,12 +113,12 @@ export default function NeighbourhoodGrid() {
 
         {isLoading ? (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <StaggerReveal className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="sm:col-span-2">
                 <SkeletonCard tall />
               </div>
               <SkeletonCard tall />
-            </div>
+            </StaggerReveal>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <SkeletonCard />
               <SkeletonCard />
@@ -142,23 +143,23 @@ export default function NeighbourhoodGrid() {
 
             {/* Row 2 — three medium */}
             {(m1 || m2 || m3) && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <StaggerReveal className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {m1 && <AreaCard area={m1} size="small" />}
                 {m2 && <AreaCard area={m2} size="small" />}
                 {m3 && <AreaCard area={m3} size="small" />}
-              </div>
+              </StaggerReveal>
             )}
 
             {/* Row 3 — medium + big */}
             {(medBottom || heroBottom) && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <StaggerReveal className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {medBottom && <AreaCard area={medBottom} size="medium" />}
                 {heroBottom && (
                   <div className="sm:col-span-2">
                     <AreaCard area={heroBottom} size="hero" />
                   </div>
                 )}
-              </div>
+              </StaggerReveal>
             )}
           </div>
         )}
