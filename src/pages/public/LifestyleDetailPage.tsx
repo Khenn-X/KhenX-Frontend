@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, BarChart3, CheckCircle2, ChevronDown, MapPin, Sparkles } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import EmptyState from '../../components/shared/EmptyState';
 import ErrorMessage from '../../components/shared/ErrorMessage';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
@@ -20,13 +20,14 @@ interface LifestyleFitScoreProps {
   areaName?: string;
 }
 
-/** Reveals a container's children once, the first time it scrolls into view. Respects reduced motion. */
+/** Reveals a container's children once, the first time it scrolls into view. Respects reduced motion.
+ *  Uses a callback ref (via state) rather than useRef so it still attaches correctly if the target
+ *  node mounts after the component's first render — e.g. once a loading state resolves. */
 function useRevealOnScroll<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null);
+  const [node, setNode] = useState<T | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const node = ref.current;
     if (!node) return;
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -45,9 +46,9 @@ function useRevealOnScroll<T extends HTMLElement>() {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [node]);
 
-  return { ref, isVisible };
+  return { ref: setNode, isVisible };
 }
 
 /** Small delay flag so ring/bar widths animate in on mount rather than snapping to their final value. */

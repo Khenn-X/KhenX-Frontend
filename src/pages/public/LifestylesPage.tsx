@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
@@ -45,13 +45,14 @@ const HOW_IT_WORKS = [
   },
 ];
 
-/** Reveals a container's children once, the first time it scrolls into view. Respects reduced motion. */
+/** Reveals a container's children once, the first time it scrolls into view. Respects reduced motion.
+ *  Uses a callback ref (via state) rather than useRef so it still attaches correctly if the target
+ *  node mounts after the component's first render — e.g. once a loading state resolves. */
 function useRevealOnScroll<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null);
+  const [node, setNode] = useState<T | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const node = ref.current;
     if (!node) return;
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -70,9 +71,9 @@ function useRevealOnScroll<T extends HTMLElement>() {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [node]);
 
-  return { ref, isVisible };
+  return { ref: setNode, isVisible };
 }
 
 export default function LifestylesPage() {
