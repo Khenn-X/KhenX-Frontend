@@ -228,6 +228,7 @@ export interface IListing {
   nearbyAmenities?: INearbyAmenities;
   photos: string[];
   status: ListingStatus;
+  deactivatedAt?: string | null; // ISO date when listing was deactivated, for grace period display
   rejectionReason?: string;
   isFeatured: boolean;
   viewCount: number;

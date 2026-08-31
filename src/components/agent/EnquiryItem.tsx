@@ -53,6 +53,14 @@ const EnquiryItem = ({ enquiry }: EnquiryItemProps) => {
       {/* Message */}
       <p className="text-sm text-slate-600 leading-relaxed mb-4 pl-12">{enquiry.message}</p>
 
+      {(enquiry.buyerIntent || enquiry.buyerLocation || enquiry.contactPreference) && (
+        <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 pl-12 text-xs text-slate-500">
+          {enquiry.buyerIntent && <span>Buying for: <strong className="font-semibold text-slate-600">{enquiry.buyerIntent}</strong></span>}
+          {enquiry.buyerLocation && <span>Located: <strong className="font-semibold text-slate-600">{enquiry.buyerLocation === 'outside_nigeria' ? 'Outside Nigeria' : 'In Nigeria'}</strong></span>}
+          {enquiry.contactPreference && <span>Prefers: <strong className="font-semibold text-slate-600">{enquiry.contactPreference === 'whatsapp' ? 'WhatsApp' : enquiry.contactPreference}</strong></span>}
+        </div>
+      )}
+
       {/* Contact + meta */}
       <div className="flex flex-wrap items-center gap-4 pl-12 text-xs text-slate-400">
         <a

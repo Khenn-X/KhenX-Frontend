@@ -1,12 +1,15 @@
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Users } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { buildNeighbourhoodMatchQuery } from '../../lib/neighbourhoodMatchQuery';
 import { useNeighbourhoodQuizStore } from '../../store/neighbourhoodQuiz.store';
+import { lifestylesApi } from '../../api/lifestyles.api';
 
 // ─── Quiz flow definition ─────────────────────────────────────────────────────
 
-type StepId = 'budget' | 'priority' | 'commute';
+type StepId = 'budget' | 'priority' | 'commute' | 'lifestyle';
 
 interface Option { label: string; value: string }
 
@@ -16,7 +19,7 @@ interface Step {
   options:  Option[];
 }
 
-const STEPS: Step[] = [
+const BASE_STEPS: Step[] = [
   {
     id:       'budget',
     question: 'What is your monthly housing budget?',
@@ -48,21 +51,39 @@ const STEPS: Step[] = [
   },
 ];
 
+const LIFESTYLE_STEP_ID: StepId = 'lifestyle';
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function NeighbourhoodMatcher() {
   const navigate = useNavigate();
   const setQuizInputs = useNeighbourhoodQuizStore((state) => state.setInputs);
+  const lifestylesQuery = useQuery({
+    queryKey: ['lifestyles'],
+    queryFn: lifestylesApi.getAll,
+    staleTime: 1000 * 60 * 10,
+  });
+  const lifestyleOptions: Option[] = (lifestylesQuery.data?.data?.profiles ?? [])
+    .map((profile) => ({ label: profile.name, value: profile.slug }));
+  const steps: Step[] = [
+    ...BASE_STEPS,
+    {
+      id: LIFESTYLE_STEP_ID,
+      question: 'Which of these best describes you?',
+      options: lifestyleOptions,
+    },
+  ];
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers]         = useState<Record<StepId, string>>({
     budget:   '',
     priority: '',
     commute:  '',
+    lifestyle: '',
   });
   const [selected, setSelected] = useState('');
 
-  const step = STEPS[currentStep];
-  const totalSteps = STEPS.length;
+  const step = steps[currentStep];
+  const totalSteps = steps.length;
   const isLast = currentStep === totalSteps - 1;
 
   const handleSelect = (value: string) => {
@@ -71,16 +92,32 @@ export default function NeighbourhoodMatcher() {
   };
 
   const handleNext = () => {
-    if (!selected) return;
+    const canAdvance = Boolean(selected) || step.id === LIFESTYLE_STEP_ID;
+    if (!canAdvance) return;
+
+    const latestAnswers = {
+      budget: answers.budget,
+      priority: answers.priority,
+      commute: answers.commute,
+      lifestyle: step.id === LIFESTYLE_STEP_ID ? selected || answers.lifestyle : answers.lifestyle,
+    };
+
     if (isLast) {
+      const nextLifestyle = selected || answers.lifestyle || null;
       setQuizInputs({
-        budget: answers.budget,
-        priority: answers.priority,
-        commute: answers.commute,
-        workLocation: answers.commute,
+        budget: latestAnswers.budget,
+        priority: latestAnswers.priority,
+        commute: latestAnswers.commute,
+        workLocation: latestAnswers.commute,
+        lifestyleSlug: nextLifestyle,
       });
-      // Build query and navigate (client-side, no full page reload)
-      const params = new URLSearchParams(answers as Record<string, string>);
+
+      const params = buildNeighbourhoodMatchQuery({
+        budget: latestAnswers.budget,
+        priority: latestAnswers.priority,
+        commute: latestAnswers.commute,
+        lifestyle: nextLifestyle,
+      });
       navigate(`/neighbourhood/match?${params.toString()}`);
     } else {
       setCurrentStep((s) => s + 1);
@@ -135,7 +172,7 @@ export default function NeighbourhoodMatcher() {
               Step {currentStep + 1} of {totalSteps}
             </span>
             <span className="text-xs font-semibold text-[#00C9A7] uppercase tracking-wide">
-              Budget
+              {step.id === 'lifestyle' ? 'Lifestyle' : step.id}
             </span>
           </div>
           <div className="h-1 w-full rounded-full bg-slate-200 mb-6">
@@ -157,7 +194,7 @@ export default function NeighbourhoodMatcher() {
                   key={opt.value}
                   onClick={() => handleSelect(opt.value)}
                   className={cn(
-                    'w-full flex items-center justify-between rounded-xl border px-4 py-3 text-sm text-left transition-all',
+                    'w-full min-h-11 flex items-center justify-between rounded-xl border px-4 py-3 text-sm text-left transition-all',
                     isSelected
                       ? 'border-[#00C9A7] bg-[#00C9A7]/8 text-[#0A1628] font-semibold'
                       : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -170,11 +207,29 @@ export default function NeighbourhoodMatcher() {
             })}
           </div>
 
+          {step.id === LIFESTYLE_STEP_ID && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelected('');
+                setAnswers((prev) => ({ ...prev, lifestyle: '' }));
+              }}
+              className={cn(
+                'mt-3 w-full min-h-11 rounded-xl border px-4 py-3 text-sm text-left transition-colors',
+                selected === ''
+                  ? 'border-[#00C9A7] bg-[#00C9A7]/8 text-[#0A1628] font-semibold'
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300',
+              )}
+            >
+              Not sure / skip
+            </button>
+          )}
+
           {/* CTA */}
           <button
             onClick={handleNext}
-            disabled={!selected}
-            className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#0A1628] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0A1628]/90 disabled:opacity-40 transition-colors"
+            disabled={!selected && step.id !== LIFESTYLE_STEP_ID}
+            className="mt-5 min-h-11 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#0A1628] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0A1628]/90 disabled:opacity-40 transition-colors"
           >
             {isLast ? 'Find My Match' : 'Next Question'}
             <ArrowRight className="h-4 w-4" />

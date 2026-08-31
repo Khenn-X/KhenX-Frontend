@@ -111,6 +111,18 @@ const NAV_GROUPS: NavGroup[] = [
         desc: "Area scores, power, flood and safety data",
       },
       {
+        label: "Discover by Lifestyle",
+        to: "/lifestyles",
+        icon: Heart,
+        desc: "Find neighbourhoods that fit the way you live",
+      },
+      {
+        label: "For Diaspora",
+        to: "/diaspora",
+        icon: ShieldCheck,
+        desc: "Find property in Nigeria from abroad",
+      },
+      {
         label: "Explore an Area",
         to: "/intelligence/explore",
         icon: Map,
@@ -118,7 +130,7 @@ const NAV_GROUPS: NavGroup[] = [
       },
       {
         label: "Saved Properties",
-        to: "/seeker/saved",
+        to: "/saved",
         icon: Heart,
         desc: "Properties you have bookmarked",
         authRequired: true,
@@ -746,12 +758,12 @@ const Navbar = () => {
                         )}
                         <button
                           onClick={() => {
-                            navigate("/seeker/saved");
+                            navigate("/saved");
                             closeAll();
                           }}
                           className={cn(
                             "flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors",
-                            pathname === "/seeker/saved"
+                            pathname === "/saved"
                               ? "text-[#00C9A7] bg-[#00C9A7]/5 font-semibold"
                               : "text-slate-600 hover:bg-slate-50 hover:text-[#0A1628]",
                           )}

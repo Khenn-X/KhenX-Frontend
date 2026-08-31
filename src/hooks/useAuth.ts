@@ -49,6 +49,7 @@ export const useLogin = () => {
       if (role === 'superadmin') navigate(ROUTES.SUPERADMIN_DASHBOARD);
       else if (role === 'admin')  navigate(ROUTES.ADMIN_DASHBOARD);
       else if (role === 'agent')  navigate(ROUTES.AGENT_DASHBOARD);
+      else if (role === 'seeker') navigate(ROUTES.DASHBOARD);
       else navigate(ROUTES.HOME);
     },
   });

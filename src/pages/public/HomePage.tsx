@@ -449,6 +449,20 @@ const CTA = () => (
               Browse properties
             </Link>
 
+            <Link
+              to="/lifestyles"
+              className="w-full rounded-lg border border-[#0A1628]/15 bg-white/70 px-7 py-3 text-sm font-semibold text-[#0A1628] transition-all hover:-translate-y-0.5 hover:bg-white sm:w-auto"
+            >
+              Discover by lifestyle
+            </Link>
+
+            <Link
+              to="/diaspora"
+              className="w-full rounded-lg border border-[#0A1628]/15 bg-white/70 px-7 py-3 text-sm font-semibold text-[#0A1628] transition-all hover:-translate-y-0.5 hover:bg-white sm:w-auto"
+            >
+              Buying from abroad?
+            </Link>
+
             <a
               href="#ai-search"
               className="w-full rounded-lg border border-[#0A1628]/15 bg-white/70 px-7 py-3 text-sm font-semibold text-[#0A1628] transition-all hover:-translate-y-0.5 hover:bg-white sm:w-auto"

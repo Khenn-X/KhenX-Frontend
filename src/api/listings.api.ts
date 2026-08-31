@@ -12,9 +12,16 @@ export interface ListingsQueryParams extends ParsedListingFilters {
 export const listingsApi = {
   // Public — browse all active listings
   getListings: async (params?: ListingsQueryParams): Promise<PaginatedResponse<IListing>> => {
-    const response = await api.get('/listings', { params });
+    // Map areaName to area for backend compatibility
+    const apiParams = params ? { ...params } : undefined;
+    if (apiParams && apiParams.areaName) {
+      apiParams.area = apiParams.areaName;
+      delete apiParams.areaName;
+    }
+
+    const response = await api.get('/listings', { params: apiParams });
     // Debug logs to verify endpoint calls and payloads
-    console.log('GET /listings params:', params);
+    console.log('GET /listings params:', apiParams);
     console.log('GET /listings response data:', response.data);
 
     // Normalize backend wrapper if listings are nested under data.listings
@@ -92,6 +99,12 @@ export const listingsApi = {
   // Agent — delete own listing
   deleteListing: async (id: string): Promise<ApiResponse> => {
     const { data } = await api.delete(`/listings/${id}`);
+    return data;
+  },
+
+  // Agent — toggle pause/resume on own listing
+  togglePause: async (id: string): Promise<ApiResponse<{ listing: IListing }>> => {
+    const { data } = await api.patch(`/listings/${id}/pause`);
     return data;
   },
 

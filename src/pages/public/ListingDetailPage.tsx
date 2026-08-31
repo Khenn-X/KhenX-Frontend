@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, BadgeCheck, CircleHelp, Heart, HeartOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { useListing } from "../../hooks/useListings";
 import { useNeighbourhood } from "../../hooks/useNeighbourhood";
 import { useListings } from "../../hooks/useListings";
 import { useAuth } from "../../hooks/useAuth";
+import { useSubmitEnquiry } from "../../hooks/useEnquiries";
+import { useIsListingSaved, useSaveListing, useUnsaveListing } from "../../hooks/useSaved";
 import { enquiriesApi } from "../../api/enquiries.api";
 import PageWrapper from "../../components/layout/PageWrapper";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 import ErrorMessage from "../../components/shared/ErrorMessage";
 import type { IListing, ListingType } from "../../types/listing.types";
 import type { INeighbourhoodIntelligence } from "../../types/neighbourhood.types";
+import { enquirySchema } from "../../lib/validators";
 import LandDetailsDisplay from "../../components/listings/LandDetailsDisplay";
 import BuildingDetailsDisplay from "../../components/listings/BuildingDetailsDisplay";
 import PropertyGallery from "../../components/listings/PropertyGallery";
@@ -349,6 +352,7 @@ const SimilarCard = ({
             >
               No photo
             </div>
+
           )}
           {scoreLabel && (
             <span
@@ -528,11 +532,44 @@ const ListingDetailPage = () => {
   const [showToast, setShowToast] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [enquiryForm, setEnquiryForm] = useState({
+    seekerName: "",
+    seekerEmail: "",
+    seekerPhone: "",
+    message: "",
+  });
+  const [enquiryError, setEnquiryError] = useState<string | null>(null);
+  const [enquirySuccess, setEnquirySuccess] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [showDiasporaFields, setShowDiasporaFields] = useState(false);
+  const [diasporaFields, setDiasporaFields] = useState({
+    buyerIntent: "",
+    buyerLocation: "",
+    contactPreference: "",
+  });
   const [showPriceBreakdown, setShowPriceBreakdown] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("overview");
   const [showStickyBar, setShowStickyBar] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const [contactName, setContactName] = useState(user?.fullName ?? "");
+  const { mutateAsync: submitEnquiry, isPending: isEnquirySubmitting } = useSubmitEnquiry();
+
+  // Save listing hooks
+  const isSaved = useIsListingSaved(id);
+  const { mutate: save, isPending: isSaving } = useSaveListing();
+  const { mutate: unsave, isPending: isUnsaving } = useUnsaveListing();
+
+  const handleSaveToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate("/login", {
+        state: { message: "Please sign in to save properties." },
+      });
+      return;
+    }
+    isSaved ? unsave(id) : save(id);
+  };
 
   const heroRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -577,8 +614,65 @@ const ListingDetailPage = () => {
     }
   };
 
-  const { data: listingData, isLoading, isError, refetch } = useListing(id);
+  const handleSubmitEnquiry = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setEnquiryError(null);
+    setEnquirySuccess(false);
+
+    const result = enquirySchema.safeParse({
+      ...enquiryForm,
+      ...(diasporaFields.buyerIntent ? { buyerIntent: diasporaFields.buyerIntent } : {}),
+      ...(diasporaFields.buyerLocation ? { buyerLocation: diasporaFields.buyerLocation } : {}),
+      ...(diasporaFields.contactPreference ? { contactPreference: diasporaFields.contactPreference } : {}),
+    });
+    if (!result.success) {
+      setEnquiryError(result.error.issues[0]?.message ?? "Please check the form fields.");
+      return;
+    }
+
+    try {
+      await submitEnquiry({ listingId: id, ...result.data });
+      setEnquiryForm({ seekerName: "", seekerEmail: "", seekerPhone: "", message: "" });
+      setDiasporaFields({ buyerIntent: "", buyerLocation: "", contactPreference: "" });
+      setShowDiasporaFields(false);
+      setEnquirySuccess(true);
+    } catch (err: unknown) {
+      const responseMessage = (err as { response?: { data?: { message?: string } } })
+        .response?.data?.message;
+      setEnquiryError(responseMessage ?? "We could not send your enquiry right now. Please try again.");
+    }
+  };
+
+  const { data: listingData, isLoading, isError, refetch, error } = useListing(id);
   const listing = listingData?.data.listing;
+
+  // Determine error message based on backend response
+  const getErrorMessage = (): string => {
+    // Extract message from error object
+    // The axios interceptor creates a new Error with:
+    // - error.message = the backend message
+    // - error.responseData = { status, message, ... }
+    // - error.response = the axios response object
+    const errorObj = error as {
+      message?: string;
+      responseData?: { message?: string };
+      response?: { data?: { message?: string } };
+    } | null;
+    
+    // Check for message in the order it appears:
+    // 1. error.message (set by axios interceptor)
+    // 2. error.responseData.message (backup)
+    // 3. error.response.data.message (fallback)
+    const backendMessage =
+      errorObj?.message ||
+      errorObj?.responseData?.message ||
+      errorObj?.response?.data?.message;
+    
+    if (backendMessage === "This listing is no longer available.") {
+      return "This property is no longer available. It may have been sold, rented, or taken off the market.";
+    }
+    return "This listing could not be found or may have been removed.";
+  };
 
   const { data: neighbourhoodData } = useNeighbourhood(listing?.areaName ?? "");
   const intel: INeighbourhoodIntelligence | undefined =
@@ -672,7 +766,7 @@ const ListingDetailPage = () => {
     return (
       <PageWrapper className="py-20">
         <ErrorMessage
-          message="This listing could not be found or may have been removed."
+          message={getErrorMessage()}
           onRetry={refetch}
         />
       </PageWrapper>
@@ -744,6 +838,12 @@ const ListingDetailPage = () => {
   const ownerEmail = ownerUser?.email?.trim() || "";
   const ownerPhone = ownerProfile?.phone?.trim() || "";
   const ownerKycStatus = ownerProfile?.kycStatus;
+  const ownerVerifiedAt = ownerProfile?.verifiedAt
+    ? new Date(ownerProfile.verifiedAt)
+    : null;
+  const hasValidVerificationDate = Boolean(
+    ownerVerifiedAt && !Number.isNaN(ownerVerifiedAt.getTime()),
+  );
   const ownerBadgeLabel =
     ownerKycStatus === "approved"
       ? "Verified KhenX Advisor"
@@ -929,7 +1029,6 @@ const ListingDetailPage = () => {
               photos={listing.photos}
               title={listing.title}
               isFeatured={listing.isFeatured}
-              isVerified={listing.status === "active"}
             />
           </div>
 
@@ -1009,133 +1108,169 @@ const ListingDetailPage = () => {
                   </div>
 
                   <div
-                    className="khenx-price-block"
                     style={{
-                      textAlign: "right",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
                       flexShrink: 0,
-                      position: "relative",
                     }}
                   >
-                    <div
-                      className="khenx-price"
-                      style={{
-                        fontSize: 26,
-                        fontWeight: 900,
-                        color: "#0F172A",
-                        letterSpacing: "-1px",
-                        lineHeight: 1.1,
-                      }}
-                    >
-                      {formatPrice(listing.price)}
-                    </div>
                     <button
-                      onClick={() => setShowPriceBreakdown((v) => !v)}
+                      type="button"
+                      onClick={handleSaveToggle}
+                      disabled={isSaving || isUnsaving}
+                      aria-label={isSaved ? "Unsave listing" : "Save listing"}
                       style={{
+                        border: isSaved ? "1.5px solid #00C9A7" : "1.5px solid #E2E8F0",
+                        borderRadius: 12,
+                        background: isSaved ? "#E6FBF6" : "#fff",
+                        color: isSaved ? "#008A72" : "#0F172A",
+                        cursor: isSaving || isUnsaving ? "not-allowed" : "pointer",
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: 4,
-                        fontSize: 12,
-                        color: "#94A3B8",
-                        marginTop: 4,
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 0,
+                        justifyContent: "center",
+                        gap: 8,
+                        padding: "10px 14px",
+                        fontSize: 12.5,
+                        fontWeight: 700,
+                        transition: "all 0.2s ease",
+                        boxShadow: isSaved ? "0 10px 24px rgba(0, 201, 167, 0.18)" : "none",
+                        opacity: isSaving || isUnsaving ? 0.7 : 1,
                       }}
                     >
-                      {formatPricePeriod(listing.pricePeriod)}
-                      {listing.serviceCharge ? (
-                        <>
-                          <span
-                            style={{
-                              marginLeft: 2,
-                              padding: "2px 7px",
-                              background: "#FEF9EC",
-                              color: "#92400E",
-                              borderRadius: 5,
-                              fontSize: 11,
-                            }}
-                          >
-                            + service charge
-                          </span>
-                          <InfoIcon />
-                        </>
-                      ) : null}
+                      {isSaved ? <Heart size={14} fill="currentColor" /> : <HeartOff size={14} />}
+                      <span style={{ lineHeight: 1 }}>{isSaving || isUnsaving ? "Saving..." : isSaved ? "Saved" : "Save"}</span>
                     </button>
 
-                    {showPriceBreakdown && listing.serviceCharge ? (
+                    <div
+                      className="khenx-price-block"
+                      style={{
+                        textAlign: "right",
+                        flexShrink: 0,
+                        position: "relative",
+                      }}
+                    >
                       <div
-                        className="khenx-price-popup"
+                        className="khenx-price"
                         style={{
-                          position: "absolute",
-                          top: "100%",
-                          right: 0,
-                          marginTop: 8,
-                          background: "#0F172A",
-                          color: "#fff",
-                          borderRadius: 12,
-                          padding: "14px 16px",
-                          width: "min(220px, calc(100vw - 48px))",
-                          boxSizing: "border-box",
-                          textAlign: "left",
-                          boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
-                          zIndex: 10,
+                          fontSize: 26,
+                          fontWeight: 900,
+                          color: "#0F172A",
+                          letterSpacing: "-1px",
+                          lineHeight: 1.1,
                         }}
                       >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: 12,
-                            marginBottom: 6,
-                            color: "#94A3B8",
-                          }}
-                        >
-                          <span>
-                            Base {formatPricePeriod(listing.pricePeriod)}
-                          </span>
-                          <span style={{ color: "#F1F5F9" }}>
-                            {formatPrice(listing.price)}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: 12,
-                            marginBottom: 10,
-                            color: "#94A3B8",
-                          }}
-                        >
-                          <span>Service charge</span>
-                          <span style={{ color: "#F1F5F9" }}>
-                            {formatPrice(listing.serviceCharge)}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            height: 1,
-                            background: "#1E293B",
-                            marginBottom: 10,
-                          }}
-                        />
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: 12.5,
-                            fontWeight: 700,
-                          }}
-                        >
-                          <span>
-                            Total {formatPricePeriod(listing.pricePeriod)}
-                          </span>
-                          <span style={{ color: "#00C9A7" }}>
-                            {formatPrice(annualTotal)}
-                          </span>
-                        </div>
+                        {formatPrice(listing.price)}
                       </div>
-                    ) : null}
+                      <button
+                        onClick={() => setShowPriceBreakdown((v) => !v)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          fontSize: 12,
+                          color: "#94A3B8",
+                          marginTop: 4,
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 0,
+                        }}
+                      >
+                        {formatPricePeriod(listing.pricePeriod)}
+                        {listing.serviceCharge ? (
+                          <>
+                            <span
+                              style={{
+                                marginLeft: 2,
+                                padding: "2px 7px",
+                                background: "#FEF9EC",
+                                color: "#92400E",
+                                borderRadius: 5,
+                                fontSize: 11,
+                              }}
+                            >
+                              + service charge
+                            </span>
+                            <InfoIcon />
+                          </>
+                        ) : null}
+                      </button>
+
+                      {showPriceBreakdown && listing.serviceCharge ? (
+                        <div
+                          className="khenx-price-popup"
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            right: 0,
+                            marginTop: 8,
+                            background: "#0F172A",
+                            color: "#fff",
+                            borderRadius: 12,
+                            padding: "14px 16px",
+                            width: "min(220px, calc(100vw - 48px))",
+                            boxSizing: "border-box",
+                            textAlign: "left",
+                            boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
+                            zIndex: 10,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: 12,
+                              marginBottom: 6,
+                              color: "#94A3B8",
+                            }}
+                          >
+                            <span>
+                              Base {formatPricePeriod(listing.pricePeriod)}
+                            </span>
+                            <span style={{ color: "#F1F5F9" }}>
+                              {formatPrice(listing.price)}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: 12,
+                              marginBottom: 10,
+                              color: "#94A3B8",
+                            }}
+                          >
+                            <span>Service charge</span>
+                            <span style={{ color: "#F1F5F9" }}>
+                              {formatPrice(listing.serviceCharge)}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              height: 1,
+                              background: "#1E293B",
+                              marginBottom: 10,
+                            }}
+                          />
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: 12.5,
+                              fontWeight: 700,
+                            }}
+                          >
+                            <span>
+                              Total {formatPricePeriod(listing.pricePeriod)}
+                            </span>
+                            <span style={{ color: "#00C9A7" }}>
+                              {formatPrice(annualTotal)}
+                            </span>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
@@ -1828,6 +1963,7 @@ const ListingDetailPage = () => {
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
                 <label
+                  htmlFor="preferred-date"
                   style={{
                     display: "block",
                     fontSize: 11.5,
@@ -1839,10 +1975,12 @@ const ListingDetailPage = () => {
                   Preferred Date
                 </label>
                 <input
+                  id="preferred-date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  style={inputSt}
+                  style={{...inputSt, minHeight: 44}}
+                  aria-label="Preferred date for inspection"
                 />
               </div>
 
@@ -1855,6 +1993,7 @@ const ListingDetailPage = () => {
               >
                 <div>
                   <label
+                    htmlFor="time-slot"
                     style={{
                       display: "block",
                       fontSize: 11.5,
@@ -1866,9 +2005,11 @@ const ListingDetailPage = () => {
                     Time Slot
                   </label>
                   <select
+                    id="time-slot"
                     value={timeSlot}
                     onChange={(e) => setTimeSlot(e.target.value)}
-                    style={inputSt}
+                    style={{ ...inputSt, minHeight: 44 }}
+                    aria-label="Preferred time slot for inspection"
                   >
                     <option>Morning (09-12)</option>
                     <option>Afternoon (12-16)</option>
@@ -1877,6 +2018,7 @@ const ListingDetailPage = () => {
                 </div>
                 <div>
                   <label
+                    htmlFor="visitors-count"
                     style={{
                       display: "block",
                       fontSize: 11.5,
@@ -1888,17 +2030,20 @@ const ListingDetailPage = () => {
                     Visitors
                   </label>
                   <input
+                    id="visitors-count"
                     type="number"
                     min={1}
                     value={visitors}
                     onChange={(e) => setVisitors(+e.target.value)}
-                    style={inputSt}
+                    style={{ ...inputSt, minHeight: 44 }}
+                    aria-label="Number of visitors for inspection"
                   />
                 </div>
               </div>
 
               <div>
                 <label
+                  htmlFor="contact-name"
                   style={{
                     display: "block",
                     fontSize: 11.5,
@@ -1910,13 +2055,16 @@ const ListingDetailPage = () => {
                   Your Name
                 </label>
                 <input
+                  id="contact-name"
                   type="text"
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
                   placeholder="Full Name"
                   readOnly={isAuthenticated && !!user?.fullName}
+                  aria-label="Your name"
                   style={{
                     ...inputSt,
+                    minHeight: 44,
                     background:
                       isAuthenticated && !!user?.fullName
                         ? "#F8FAFC"
@@ -2129,16 +2277,217 @@ const ListingDetailPage = () => {
               >
                 <MailIcon /> Email
               </button>
+
             </div>
+            <button
+              type="button"
+              onClick={() => setShowContactForm((visible) => !visible)}
+              style={{
+                width: "100%",
+                border: "1.5px solid #00C9A7",
+                borderRadius: 10,
+                padding: "10px",
+                background: showContactForm ? "#E6FBF6" : "#fff",
+                color: "#008A72",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                marginTop: 10,
+              }}
+            >
+              {showContactForm ? "Hide contact form" : "Contact Agent"}
+            </button>
           </div>
 
-          {/* Institutional Trust */}
+          {/* Contact agent */}
+          {showContactForm && (
+            <form
+              onSubmit={handleSubmitEnquiry}
+              className="khenx-panel"
+              style={{
+                background: "#fff",
+                borderRadius: 18,
+                padding: "18px 20px",
+                border: "1px solid #E2E8F0",
+              }}
+            >
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0F172A", margin: "0 0 5px" }}>
+                Contact Agent
+              </h3>
+              <p style={{ fontSize: 11.5, color: "#64748B", lineHeight: 1.5, margin: "0 0 16px" }}>
+                Ask a question or request more information about this property.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <input
+                  required
+                  type="text"
+                  value={enquiryForm.seekerName}
+                  onChange={(e) => setEnquiryForm((current) => ({ ...current, seekerName: e.target.value }))}
+                  placeholder="Your name"
+                  aria-label="Your name"
+                  style={{ ...inputSt, minHeight: 44 }}
+                />
+                <input
+                  required
+                  type="email"
+                  value={enquiryForm.seekerEmail}
+                  onChange={(e) => setEnquiryForm((current) => ({ ...current, seekerEmail: e.target.value }))}
+                  placeholder="Email address"
+                  aria-label="Email address"
+                  style={{ ...inputSt, minHeight: 44 }}
+                />
+                <input
+                  type="tel"
+                  value={enquiryForm.seekerPhone}
+                  onChange={(e) => setEnquiryForm((current) => ({ ...current, seekerPhone: e.target.value }))}
+                  placeholder="Phone (optional)"
+                  aria-label="Phone (optional)"
+                  style={{ ...inputSt, minHeight: 44 }}
+                />
+                <textarea
+                  required
+                  minLength={10}
+                  rows={4}
+                  value={enquiryForm.message}
+                  onChange={(e) => setEnquiryForm((current) => ({ ...current, message: e.target.value }))}
+                  placeholder="Your message (10 characters minimum)"
+                  aria-label="Your message"
+                  style={{ ...inputSt, resize: "vertical", minHeight: 92 }}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowDiasporaFields((visible) => !visible)}
+                aria-expanded={showDiasporaFields}
+                aria-controls="diaspora-section"
+                id="diaspora-toggle"
+                style={{
+                  width: "100%",
+                  border: "none",
+                  padding: "12px 0 4px",
+                  background: "transparent",
+                  color: "#008A72",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  textAlign: "left",
+                  cursor: "pointer",
+                  outline: "2px solid transparent",
+                  outlineOffset: "2px",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = "2px solid #008A72";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = "2px solid transparent";
+                }}
+              >
+                {showDiasporaFields ? "Hide optional details" : "Buying from abroad? Tell us more"}
+              </button>
+
+              {showDiasporaFields && (
+                <div
+                  id="diaspora-section"
+                  role="region"
+                  aria-labelledby="diaspora-toggle"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                    marginTop: 8,
+                    paddingTop: 12,
+                    borderTop: "1px solid #E2E8F0",
+                  }}
+                >
+                  <label htmlFor="buyer-intent" style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>
+                    Buying for (optional)
+                    <select
+                      id="buyer-intent"
+                      value={diasporaFields.buyerIntent}
+                      onChange={(e) => setDiasporaFields((current) => ({ ...current, buyerIntent: e.target.value }))}
+                      aria-label="Buying for (optional)"
+                      style={{ ...inputSt, display: "block", marginTop: 6, minHeight: 44 }}
+                    >
+                      <option value="">Select one</option>
+                      <option value="self">Self</option>
+                      <option value="family">Family</option>
+                      <option value="investment">Investment</option>
+                      <option value="relocation">Relocation</option>
+                    </select>
+                  </label>
+                  <label htmlFor="buyer-location" style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>
+                    Current location (optional)
+                    <select
+                      id="buyer-location"
+                      value={diasporaFields.buyerLocation}
+                      onChange={(e) => setDiasporaFields((current) => ({ ...current, buyerLocation: e.target.value }))}
+                      aria-label="Current location (optional)"
+                      style={{ ...inputSt, display: "block", marginTop: 6, minHeight: 44 }}
+                    >
+                      <option value="">Select one</option>
+                      <option value="in_nigeria">In Nigeria</option>
+                      <option value="outside_nigeria">Outside Nigeria</option>
+                    </select>
+                  </label>
+                  <label htmlFor="contact-preference" style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>
+                    Preferred contact (optional)
+                    <select
+                      id="contact-preference"
+                      value={diasporaFields.contactPreference}
+                      onChange={(e) => setDiasporaFields((current) => ({ ...current, contactPreference: e.target.value }))}
+                      aria-label="Preferred contact (optional)"
+                      style={{ ...inputSt, display: "block", marginTop: 6, minHeight: 44 }}
+                    >
+                      <option value="">Select one</option>
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="email">Email</option>
+                      <option value="phone">Phone</option>
+                    </select>
+                  </label>
+                </div>
+              )}
+
+              {enquiryError && (
+                <p role="alert" style={{ margin: "10px 0 0", color: "#DC2626", fontSize: 12, lineHeight: 1.5 }}>
+                  {enquiryError}
+                </p>
+              )}
+              {enquirySuccess && (
+                <p role="status" style={{ margin: "10px 0 0", color: "#008A72", fontSize: 12, lineHeight: 1.5 }}>
+                  Your enquiry was sent. The agent will be in touch soon.
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isEnquirySubmitting}
+                style={{
+                  width: "100%",
+                  background: isEnquirySubmitting ? "#64748B" : "#00C9A7",
+                  color: "#0A1628",
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "12px",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: isEnquirySubmitting ? "not-allowed" : "pointer",
+                  marginTop: 16,
+                  opacity: isEnquirySubmitting ? 0.85 : 1,
+                }}
+              >
+                {isEnquirySubmitting ? "Sending..." : "Send Enquiry"}
+              </button>
+            </form>
+          )}
+
+          {/* Agent verification and disclosure */}
           <div
             className="khenx-panel"
             style={{
-              background: "#F8FAFC",
+              background: "#fff",
               borderRadius: 18,
-              padding: "16px 18px",
+              padding: "18px",
               border: "1px solid #E2E8F0",
             }}
           >
@@ -2156,7 +2505,11 @@ const ListingDetailPage = () => {
                   flexShrink: 0,
                 }}
               >
-                <CheckShieldIcon />
+                {ownerKycStatus === "approved" ? (
+                  <BadgeCheck size={20} color="#00A88C" strokeWidth={2.5} />
+                ) : (
+                  <CircleHelp size={20} color="#94A3B8" strokeWidth={1.8} />
+                )}
               </div>
               <div style={{ minWidth: 0 }}>
                 <div
@@ -2167,22 +2520,85 @@ const ListingDetailPage = () => {
                     marginBottom: 5,
                   }}
                 >
-                  Institutional Trust
+                  {ownerKycStatus === "approved"
+                    ? "KhenX Verified Agent"
+                    : "Agent verification not yet completed"}
                 </div>
+                {ownerKycStatus === "approved" && hasValidVerificationDate && (
+                  <p style={{ fontSize: 11, color: "#64748B", margin: "0 0 8px" }}>
+                    Verified since {ownerVerifiedAt!.toLocaleDateString("en-NG", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </p>
+                )}
                 <p
                   style={{
                     fontSize: 11.5,
                     color: "#64748B",
                     lineHeight: 1.65,
-                    margin: 0,
+                    margin: "0 0 10px",
                   }}
                 >
-                  Ownership papers, structural integrity, and neighbourhood data
-                  have been independently verified by KhenX Analysts.
+                  What this means
                 </p>
+                <ul
+                  style={{
+                    margin: 0,
+                    padding: "0 0 0 17px",
+                    color: "#64748B",
+                    fontSize: 11.5,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  <li>
+                    Agent identity: {ownerKycStatus === "approved" ? "verified via KhenX KYC" : "not yet verified"}.
+                  </li>
+                  <li>Listing details: as provided by the agent, not independently confirmed by KhenX.</li>
+                  <li>
+                    Neighbourhood intelligence: available{" "}
+                    <button
+                      type="button"
+                      onClick={() => scrollToSection("intelligence")}
+                      style={{
+                        border: 0,
+                        padding: 0,
+                        background: "none",
+                        color: "#00A88C",
+                        font: "inherit",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      view the intelligence section
+                    </button>
+                    .
+                  </li>
+                  <li>Property ownership and legal documents: not verified by KhenX. Verify independently.</li>
+                </ul>
               </div>
             </div>
           </div>
+
+          <Link
+            to="/diaspora"
+            className="khenx-panel"
+            style={{
+              display: "block",
+              background: "#E6FBF6",
+              borderRadius: 14,
+              padding: "12px 14px",
+              border: "1px solid #B7EFE3",
+              color: "#006A61",
+              fontSize: 11.5,
+              fontWeight: 700,
+              lineHeight: 1.5,
+              textDecoration: "none",
+            }}
+          >
+            Before you pay, see the buyer due-diligence checklist.
+          </Link>
 
           {/* Quick intel pill */}
           {intel && (

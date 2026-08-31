@@ -6,15 +6,25 @@ import ListingCard from '../../components/listings/ListingCard';
 import NaturalSearchBar from '../../components/search/NaturalSearchBar';
 import PageWrapper from '../../components/layout/PageWrapper';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import ErrorMessage from '../../components/shared/ErrorMessage';
 import { ROUTES } from '../../constants/routes';
 
 const SeekerDashboardPage = () => {
   const { user } = useAuthStore();
-  const { data, isLoading } = useSavedListings();
+  const { data, isLoading, isError, refetch } = useSavedListings();
   const navigate = useNavigate();
 
   const savedListings = Array.isArray(data?.data?.listings) ? data.data.listings : [];
   const recentSaved = savedListings.slice(0, 3);
+  const areaCounts = savedListings.reduce<Record<string, number>>((acc, listing) => {
+    const areaName = listing?.areaName?.trim();
+    if (!areaName) return acc;
+    acc[areaName] = (acc[areaName] ?? 0) + 1;
+    return acc;
+  }, {});
+  const topAreas = Object.entries(areaCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
 
   const firstName = user?.fullName.split(' ')[0] ?? 'there';
 
@@ -94,7 +104,33 @@ const SeekerDashboardPage = () => {
           )}
         </div>
 
-        {isLoading ? (
+        {topAreas.length > 0 && (
+          <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Saved by area</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {topAreas.map(([area, count]) => (
+                <Link
+                  key={area}
+                  to={`${ROUTES.NEIGHBOURHOOD}?area=${encodeURIComponent(area)}`}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#00C9A7]/30 bg-white px-3 py-2 text-sm font-medium text-[#0F172A] hover:border-[#00C9A7] focus:outline-2 focus:outline-offset-2 focus:outline-[#00C9A7] transition-all"
+                  aria-label={`${area} area with ${count} saved ${count === 1 ? 'listing' : 'listings'}`}
+                >
+                  <MapPin className="h-3.5 w-3.5 text-[#00C9A7]" />
+                  {area}
+                  <span className="text-slate-400">({count})</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isError ? (
+          <ErrorMessage
+            message="We couldn't load your saved listings right now."
+            onRetry={refetch}
+            className="mb-6"
+          />
+        ) : isLoading ? (
           <LoadingSpinner label="Loading saved listings..." />
         ) : recentSaved.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 py-12 text-center">

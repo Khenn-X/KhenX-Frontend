@@ -6,11 +6,12 @@ import {
   Eye,
   Heart,
   HeartOff,
-  ShieldCheck,
+  Star,
   Zap,
   Shield,
   Droplets,
   ArrowLeftRight,
+  AlertCircle,
 } from "lucide-react";
 import type { IListing } from "../../types/listing.types";
 import { ROUTES } from "../../constants/routes";
@@ -30,6 +31,7 @@ import {
   getListingSummaryMeta,
 } from "../../lib/utils";
 import { getTypeVisual } from "../../types/listingType.config";
+import { isListingDeactivated, getDeactivationMessage } from "../../lib/deactivatedListings";
 
 // Real area-level scores, looked up by the page from useFeaturedNeighbourhoods and
 // passed down per-card — NOT fabricated per-listing. Areas outside the featured
@@ -77,11 +79,14 @@ const ListingCard = ({
   const isSaved = useIsListingSaved(listing._id);
   const { mutate: save, isPending: isSaving } = useSaveListing();
   const { mutate: unsave, isPending: isUnsaving } = useUnsaveListing();
+  const isDeactivated = isListingDeactivated(listing);
 
   const handleSaveToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) return;
+    // Always allow unsaving, but disable saving if deactivated
+    if (!isSaved && isDeactivated) return;
     (isSaved ? unsave : save)(listing._id);
   };
 
@@ -126,6 +131,7 @@ const ListingCard = ({
         "group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/50",
         "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/70",
         isListView ? "flex flex-row" : "flex flex-col",
+        isDeactivated && "opacity-60 grayscale",
         className,
       )}
     >
@@ -150,18 +156,28 @@ const ListingCard = ({
         {/* Gradient scrim — keeps badges legible over bright photos */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-black/0 to-black/0" />
 
+        {/* Deactivated overlay notice */}
+        {isDeactivated && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
+            <div className="flex flex-col items-center gap-2 rounded-lg bg-slate-900/90 backdrop-blur-sm px-4 py-3 text-center">
+              <AlertCircle className="h-5 w-5 text-amber-400" />
+              <p className="text-xs font-medium text-white max-w-[180px]">
+                {getDeactivationMessage()}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Top badges */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
           <TypeBadge listingType={listing.listingType} />
         </div>
 
-        {/* NOTE: 'Verified' is temporarily mapped from isFeatured — these are
-            semantically different (promoted placement vs. KYC/fraud-checked).
-            Swap this for a real isVerified field on IListing when available. */}
+        {/* Featured is a promotion signal, not an agent verification signal. */}
         {listing.isFeatured && (
-          <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-[#0A1628]/90 backdrop-blur-sm px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
-            <ShieldCheck className="h-3 w-3 text-[#00C9A7]" />
-            Verified
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-amber-50/95 backdrop-blur-sm px-2.5 py-1 text-xs font-semibold text-amber-700 shadow-sm">
+            <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+            Featured
           </span>
         )}
 

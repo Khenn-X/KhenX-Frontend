@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { buildNeighbourhoodMatchQuery } from './neighbourhoodMatchQuery';
 import { adminProfileSchema, listingSchema, normalizeListingSubmissionData } from './validators';
 
 test('accepts valid admin profile data', () => {
@@ -187,6 +188,54 @@ test('accepts one-time price period for land sale listings', () => {
 });
 
 test('strips building-only fields from land submissions before send', () => {
+  const payload = normalizeListingSubmissionData({
+    title: 'Vacant land for sale in Ikorodu',
+    description: 'Spacious plot with easy access and clear documentation for immediate purchase',
+    propertyCategory: 'land',
+    propertyType: 'land',
+    listingType: 'sale',
+    bedrooms: 3,
+    bathrooms: 2,
+    areaName: 'Ikorodu',
+    price: 6000000,
+    pricePeriod: 'one-time',
+    serviceCharge: 0,
+    features: {
+      generator: false,
+      borehole: false,
+      security: false,
+      parking: false,
+      gym: false,
+      pool: false,
+      cctv: false,
+      internet: false,
+    },
+    buildingDetails: {
+      floors: 2,
+      toilets: 4,
+      yearBuilt: 2020,
+    },
+  } as never);
+
+  assert.equal('bedrooms' in payload, false);
+  assert.equal('bathrooms' in payload, false);
+});
+
+test('builds a query string that keeps the selected lifestyle when the user skips earlier stale answers', () => {
+  const query = buildNeighbourhoodMatchQuery({
+    budget: 'under-200k',
+    priority: 'security',
+    commute: 'Lekki',
+    lifestyle: 'new-families',
+  });
+
+  assert.equal(query.get('budget'), 'under-200k');
+  assert.equal(query.get('priority'), 'security');
+  assert.equal(query.get('commute'), 'Lekki');
+  assert.equal(query.get('lifestyleSlug'), 'new-families');
+});
+
+test('strips building-only fields from land submissions before send and keeps the land payload valid', () => {
   const payload = normalizeListingSubmissionData({
     title: 'Vacant land for sale in Ikorodu',
     description: 'Spacious plot with easy access and clear documentation for immediate purchase',

@@ -11,7 +11,7 @@ export const savedApi = {
 
   // Auth required — save a listing
   saveListing: async (listingId: string): Promise<ApiResponse> => {
-    const { data } = await api.post('/saved', { listingId });
+    const { data } = await api.post(`/saved/${listingId}`);
     return data;
   },
 

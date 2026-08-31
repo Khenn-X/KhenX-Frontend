@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { savedApi } from '../api/saved.api';
 import { queryKeys } from '../constants/queryKeys';
 import { useAuthStore } from '../store/auth.store';
+import { extractSavedListings } from '../lib/savedListings';
 
 export const useSavedListings = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -9,7 +10,14 @@ export const useSavedListings = () => {
   return useQuery({
     queryKey: queryKeys.saved.all,
     queryFn: () => savedApi.getSavedListings(),
-    enabled: isAuthenticated, // Only fetch if logged in
+    enabled: isAuthenticated,
+    select: (response) => ({
+      ...response,
+      data: {
+        ...response.data,
+        listings: extractSavedListings(response),
+      },
+    }),
   });
 };
 

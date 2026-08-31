@@ -6,6 +6,7 @@ export interface NeighbourhoodQuizInputs {
   priority: string;
   commute: string;
   workLocation: string;
+  lifestyleSlug: string | null;
 }
 
 interface NeighbourhoodQuizState extends NeighbourhoodQuizInputs {
@@ -18,6 +19,7 @@ const EMPTY_INPUTS: NeighbourhoodQuizInputs = {
   priority: '',
   commute: '',
   workLocation: '',
+  lifestyleSlug: null,
 };
 
 export const useNeighbourhoodQuizStore = create<NeighbourhoodQuizState>()(

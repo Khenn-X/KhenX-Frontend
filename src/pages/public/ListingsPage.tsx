@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Grid3x3, List, ChevronDown } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useListings } from '../../hooks/useListings';
 import { useFeaturedNeighbourhoods } from '../../hooks/useNeighbourhood';
 import { useSearchStore } from '../../store/search.store';
@@ -19,12 +20,25 @@ import NeighbourhoodGrid from "../../components/home/NeighbourhoodGrid";
 const LIMIT = 24;
 
 const ListingsPage = () => {
+  const [searchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<ExtendedListingFilters>({});
   const [activeTab, setActiveTab] = useState('');
   const [activeQuickFilter, setActiveQuickFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { hasSearched } = useSearchStore();
+
+  // Initialize filters from URL query parameters when component mounts
+  useEffect(() => {
+    const area = searchParams.get('area');
+    if (area) {
+      // Map the 'area' query param to 'areaName' in the filters
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        areaName: area,
+      }));
+    }
+  }, [searchParams]);
 
   // NOTE: areaNames (multi-select), minPowerScore, minSecurityScore, maxFloodRisk,
   // and features aren't supported by the /listings endpoint yet — only the

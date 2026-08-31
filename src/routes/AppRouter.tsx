@@ -16,12 +16,19 @@ import LoadingSpinner from "../components/shared/LoadingSpinner";
 const HomePage = lazy(() => import("../pages/public/HomePage"));
 const AboutPage = lazy(() => import("../pages/public/AboutPage"));
 const HowItWorksPage = lazy(() => import("../pages/public/HowItWorksPage"));
+const DiasporaPage = lazy(() => import("../pages/public/DiasporaPage"));
 const ListingsPage = lazy(() => import("../pages/public/ListingsPage"));
 const ListingDetailPage = lazy(
   () => import("../pages/public/ListingDetailPage"),
 );
 const NeighbourhoodPage = lazy(
   () => import("../pages/public/NeighbourhoodPage"),
+);
+const LifestylesPage = lazy(
+  () => import("../pages/public/LifestylesPage"),
+);
+const LifestyleDetailPage = lazy(
+  () => import("../pages/public/LifestyleDetailPage"),
 );
 const NeighbourhoodDetailPage = lazy(
   () => import("../pages/public/NeighbourhoodDetailPage"),
@@ -165,6 +172,14 @@ const AppRouter = () => {
           }
         />
         <Route
+          path="/diaspora"
+          element={
+            <PublicLayout>
+              <DiasporaPage />
+            </PublicLayout>
+          }
+        />
+        <Route
           path="/listings"
           element={
             <PublicLayout>
@@ -223,6 +238,22 @@ const AppRouter = () => {
           element={
             <PublicLayout>
               <NeighbourhoodPage />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/lifestyles"
+          element={
+            <PublicLayout>
+              <LifestylesPage />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/lifestyles/:slug"
+          element={
+            <PublicLayout>
+              <LifestyleDetailPage />
             </PublicLayout>
           }
         />

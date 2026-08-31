@@ -9,28 +9,28 @@ const LIFESTYLE_CATEGORIES = [
     label:    'New Families',
     tagline:  'Top-rated schools & gated estates',
     image:    '/images/lifestyle/families.jpg',
-    href:     '/neighbourhood?lifestyle=families',
+    href:     '/lifestyles/new-families',
   },
   {
     id:       'luxury',
     label:    'Luxury Living',
     tagline:  'Penthouse living with lagoon views',
     image:    '/images/lifestyle/luxury.jpg',
-    href:     '/neighbourhood?lifestyle=luxury',
+    href:     '/lifestyles/luxury-living',
   },
   {
     id:       'studentfriendly',
     label:    'Student Friendly',
     tagline:  'Near top universities & hubs',
     image:    '/images/lifestyle/student.jpg',
-    href:     '/neighbourhood?lifestyle=student',
+    href:     '/lifestyles/student-friendly',
   },
   {
     id:       'business',
     label:    'Business Ready',
     tagline:  'Walking distance to corporate offices',
     image:    '/images/lifestyle/business.jpg',
-    href:     '/neighbourhood?lifestyle=business',
+    href:     '/lifestyles/business-ready',
   },
 ] as const;
 
@@ -89,7 +89,7 @@ export default function DiscoverByLifestyle() {
           <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A]">Discover by Lifestyle</h3>
         </div>
         <a
-          href="/neighbourhood/lifestyle"
+          href="/lifestyles"
           className="text-sm font-semibold text-[#00C9A7] hover:underline hidden sm:block"
         >
           All lifestyles →

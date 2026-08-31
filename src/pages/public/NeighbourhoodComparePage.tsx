@@ -6,6 +6,7 @@ import {
 import { useNeighbourhood } from '../../hooks/useNeighbourhood';
 import PageWrapper from '../../components/layout/PageWrapper';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import ErrorMessage from '../../components/shared/ErrorMessage';
 import { timeAgo, cn } from '../../lib/utils';
 import type { INeighbourhoodIntelligence } from '../../types/neighbourhood.types';
 import { LAGOS_AREAS } from '../../constants/lagos-areas';
@@ -19,7 +20,7 @@ const COL_WIDTH = 260;
 const LABEL_WIDTH = 160;
 
 type Intel = INeighbourhoodIntelligence;
-type ColState = { data: Intel | null; loading: boolean };
+type ColState = { data: Intel | null; loading: boolean; error?: boolean; refetch?: () => void };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -42,12 +43,12 @@ const floodTextColor = (r?: string | null) =>
 const AreaDataLoader = ({
   area, onUpdate,
 }: { area: string; onUpdate: (area: string, s: ColState) => void }) => {
-  const { data, isLoading } = useNeighbourhood(area);
+  const { data, isLoading, isError, refetch } = useNeighbourhood(area);
   const intel = data?.data?.area ?? null;
   useEffect(() => {
-    onUpdate(area, { data: intel, loading: isLoading });
+    onUpdate(area, { data: intel, loading: isLoading, error: isError, refetch });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [area, intel, isLoading]);
+  }, [area, intel, isLoading, isError, refetch]);
   return null;
 };
 
@@ -296,6 +297,10 @@ export default function NeighbourhoodComparePage() {
 
   const isLoading = areas.some((a) => !dataMap[a] || dataMap[a].loading);
   const anyData = areas.some((a) => dataMap[a]?.data);
+  const isAnyError = areas.some((a) => dataMap[a]?.error);
+  const refetchAll = () => {
+    areas.forEach((a) => dataMap[a]?.refetch?.());
+  };
 
   const hubs: { key: keyof NonNullable<Intel['travelTimesToHubs']>; label: string }[] = [
     { key: 'victoriaIsland', label: 'Victoria Island' },
@@ -347,7 +352,14 @@ export default function NeighbourhoodComparePage() {
 
           {pillsOpen && <FilterPills visible={visible} onToggle={toggleRow} />}
 
-          {isLoading && !anyData ? (
+          {isAnyError ? (
+            <div className="mt-6">
+              <ErrorMessage
+                message="We couldn't load one or more neighbourhood comparisons right now. Try again."
+                onRetry={refetchAll}
+              />
+            </div>
+          ) : isLoading && !anyData ? (
             <LoadingSpinner label="Fetching intelligence data…" className="py-16" />
           ) : (
             <div className="mt-6 overflow-x-auto">

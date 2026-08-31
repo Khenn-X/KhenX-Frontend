@@ -44,6 +44,7 @@ const typeConfig: Record<ListingType, { label: string; className: string }> = {
 
 export const TypeBadge = ({ listingType, className }: TypeBadgeProps) => {
   const config = typeConfig[listingType];
+  if (!config) return null; // Guard against undefined listingType
   return (
     <span
       className={cn(

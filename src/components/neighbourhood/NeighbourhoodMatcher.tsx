@@ -1,12 +1,15 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, MapPin, ArrowUpRight, Zap, Shield, Car, Droplets,
   Trophy, Sparkles, Image as ImageIcon, Target, Compass, CheckCircle2,
 } from 'lucide-react';
 import { useAllAreas, useNeighbourhoodMatch } from '../../hooks/useNeighbourhood';
+import { useLifestyleRecommendations } from '../../hooks/useLifestyleRecommendations';
 import PageWrapper from '../../components/layout/PageWrapper';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import ErrorMessage from '../../components/shared/ErrorMessage';
+import EmptyState from '../../components/shared/EmptyState';
 import { cn } from '../../lib/utils';
 import type { INeighbourhoodIntelligence, NeighbourhoodMatchCandidate } from '../../types/neighbourhood.types';
 import { useNeighbourhoodQuizStore } from '../../store/neighbourhoodQuiz.store';
@@ -302,6 +305,92 @@ const BackendResultCard = ({ candidate, rank }: { candidate: NeighbourhoodMatchC
   </div>
 );
 
+const LifestyleResultCard = ({
+  recommendation,
+  rank,
+  lifestyleSlug,
+}: {
+  recommendation: {
+    neighbourhoodId: string;
+    name: string;
+    slug: string | null;
+    score: number;
+    factorBreakdown: Array<{ factor: string; score: number; weight: number }>;
+    explanation: string;
+    matchingPropertyCount: number;
+  };
+  rank: number;
+  lifestyleSlug: string;
+}) => {
+  const [showDetails, setShowDetails] = useState(false);
+  const areaName = recommendation.slug ?? recommendation.name;
+
+  return (
+    <article className={cn(
+      'rounded-2xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg',
+      rank === 1 ? 'border-[#00C9A7] shadow-[#00C9A7]/10' : 'border-slate-200',
+    )}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#00A88C]">
+            <MapPin className="h-3.5 w-3.5" /> #{rank} lifestyle match
+          </div>
+          <h3 className="mt-2 truncate text-xl font-bold text-[#0F172A]">{recommendation.name}</h3>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-2xl font-bold text-[#0A1628]">{recommendation.score.toFixed(1)}%</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lifestyle fit</p>
+        </div>
+      </div>
+      <p className="mt-4 text-sm leading-relaxed text-slate-600">{recommendation.explanation}</p>
+      <p className="mt-3 text-sm font-medium text-slate-500">
+        {recommendation.matchingPropertyCount > 0
+          ? `${recommendation.matchingPropertyCount} matching ${recommendation.matchingPropertyCount === 1 ? 'property' : 'properties'}`
+          : 'No properties currently listed here'}
+      </p>
+      <button
+        type="button"
+        onClick={() => setShowDetails((visible) => !visible)}
+        className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#00A88C]"
+        aria-expanded={showDetails}
+      >
+        Why this score?
+        <ArrowUpRight className={cn('h-3.5 w-3.5 transition-transform', showDetails && 'rotate-90')} />
+      </button>
+      {showDetails && (
+        <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+          {recommendation.factorBreakdown.map((factor) => (
+            <div key={factor.factor}>
+              <div className="mb-1 flex justify-between text-xs text-slate-500">
+                <span className="capitalize">{factor.factor}</span>
+                <span>{factor.score.toFixed(1)}% · {(factor.weight * 100).toFixed(0)}% weight</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-slate-100">
+                <div className="h-1.5 rounded-full bg-[#00C9A7]" style={{ width: `${factor.score}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Link
+          to={`/neighbourhood/${encodeURIComponent(areaName)}`}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#0A1628] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#0A1628]/90"
+        >
+          Explore {recommendation.name}
+          <ArrowUpRight className="h-3.5 w-3.5 text-[#00C9A7]" />
+        </Link>
+        <Link
+          to={`/listings?area=${encodeURIComponent(recommendation.name)}&sourceLifestyle=${encodeURIComponent(lifestyleSlug)}`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-semibold text-[#0F172A] hover:border-[#00C9A7]"
+        >
+          View matching homes
+        </Link>
+      </div>
+    </article>
+  );
+};
+
 // ─── Section header ──────────────────────────────────────────────────────────
 
 const SectionHeader = ({
@@ -340,10 +429,12 @@ export default function NeighbourhoodMatchPage() {
   const budget   = params.get('budget')   ?? '';
   const priority = params.get('priority') ?? '';
   const commute  = params.get('commute')  ?? '';
+  const lifestyleSlug = params.get('lifestyleSlug') ?? '';
   const setQuizInputs = useNeighbourhoodQuizStore((state) => state.setInputs);
 
   const { data, isLoading, isError } = useAllAreas();
   const backendMatch = useNeighbourhoodMatch();
+  const lifestyleRecommendations = useLifestyleRecommendations(lifestyleSlug || undefined, { limit: 10 });
   const allAreas: INeighbourhoodIntelligence[] = (data as any)?.data?.areas ?? [];
 
   const workplace = commute === 'VI'
@@ -357,16 +448,17 @@ export default function NeighbourhoodMatchPage() {
           : undefined;
 
   useEffect(() => {
-    setQuizInputs({ budget, priority, commute, workLocation: workplace ?? '' });
-    if (budget || priority || workplace) {
+    setQuizInputs({ budget, priority, commute, workLocation: workplace ?? '', lifestyleSlug: lifestyleSlug || null });
+    if (!lifestyleSlug && (budget || priority || workplace)) {
       backendMatch.mutate({ budget: budget || undefined, priority: priority || undefined, workplace, currentArea: undefined });
     }
-  }, [budget, priority, commute, workplace, setQuizInputs]);
+  }, [budget, priority, commute, workplace, lifestyleSlug, setQuizInputs]);
 
   const backendResult = backendMatch.data?.data;
   const backendCandidates = backendResult
     ? [backendResult.matchedArea, ...backendResult.alternates]
     : [];
+  const lifestyleCandidates = lifestyleRecommendations.data?.data?.recommendations ?? [];
 
   // ── The core logic: split results into "exact location matches" (user's literal
   // pick) shown first, then "other good options" that fit budget + priority but
@@ -390,7 +482,9 @@ export default function NeighbourhoodMatchPage() {
   }, [allAreas, budget, priority, commute]);
 
   // Backend results are authoritative once loaded; client-side results are shown only during the loading gap.
-  const totalResults = backendResult ? backendCandidates.length : exactMatches.length + otherMatches.length;
+  const totalResults = lifestyleSlug
+    ? lifestyleCandidates.length
+    : backendResult ? backendCandidates.length : exactMatches.length + otherMatches.length;
   const PriorityIcon = priorityIcons[priority] ?? Target;
 
   return (
@@ -436,8 +530,9 @@ export default function NeighbourhoodMatchPage() {
                 <span className="text-[#00C9A7]">Lagos match.</span>
               </h1>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Ranked exactly the way you asked — your chosen area first,
-                then the best alternatives that fit your budget and priorities.
+                {lifestyleSlug
+                  ? 'Ranked using your selected lifestyle and live neighbourhood intelligence.'
+                  : 'Ranked exactly the way you asked — your chosen area first, then the best alternatives that fit your budget and priorities.'}
               </p>
             </div>
 
@@ -463,6 +558,9 @@ export default function NeighbourhoodMatchPage() {
             {commute && (
               <PreferenceChip icon={MapPin} eyebrow="Wants to be near" value={commuteLabels[commute] ?? commute} />
             )}
+            {lifestyleSlug && (
+              <PreferenceChip icon={Sparkles} eyebrow="Lifestyle" value={lifestyleSlug.replace(/-/g, ' ')} />
+            )}
           </div>
 
           <Link
@@ -476,7 +574,39 @@ export default function NeighbourhoodMatchPage() {
 
       {/* ── BODY ──────────────────────────────────────────────────────────── */}
       <PageWrapper className="py-12 -mt-8">
-        {isLoading ? (
+        {lifestyleSlug ? (
+          lifestyleRecommendations.isLoading ? (
+            <LoadingSpinner label="Finding lifestyle matches..." className="py-16" />
+          ) : lifestyleRecommendations.isError ? (
+            <ErrorMessage message="Couldn't load lifestyle matches. Please try again." onRetry={lifestyleRecommendations.refetch} />
+          ) : lifestyleCandidates.length === 0 ? (
+            <EmptyState
+              icon={MapPin}
+              title="No lifestyle matches found"
+              description="There is not enough neighbourhood data to rank this lifestyle yet."
+              className="max-w-xl mx-auto"
+            />
+          ) : (
+            <section>
+              <SectionHeader
+                icon={Sparkles}
+                title="Lifestyle matches"
+                subtitle="Ranked from the live lifestyle recommendation engine"
+                count={lifestyleCandidates.length}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {lifestyleCandidates.map((recommendation, index) => (
+                  <LifestyleResultCard
+                    key={recommendation.neighbourhoodId}
+                    recommendation={recommendation}
+                    rank={index + 1}
+                    lifestyleSlug={lifestyleSlug}
+                  />
+                ))}
+              </div>
+            </section>
+          )
+        ) : isLoading ? (
           <LoadingSpinner label="Finding your best matches…" className="py-16" />
         ) : isError ? (
           <div className="text-center py-16">

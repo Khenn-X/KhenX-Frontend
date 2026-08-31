@@ -363,6 +363,9 @@ export const enquirySchema = z.object({
     .optional()
     .or(z.literal('')),
   message: z.string().min(10, 'Message must be at least 10 characters'),
+  buyerIntent: z.enum(['self', 'family', 'investment', 'relocation']).optional(),
+  buyerLocation: z.enum(['in_nigeria', 'outside_nigeria']).optional(),
+  contactPreference: z.enum(['whatsapp', 'email', 'phone']).optional(),
 });
 
 // ─── Neighbourhood ────────────────────────────────────────────────────────────
