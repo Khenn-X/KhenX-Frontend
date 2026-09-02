@@ -28,4 +28,5 @@ export interface NaturalSearchResult {
   budgetOnly?: boolean;
   inCurrentArea?: IListing[];
   otherAreas?: IListing[];
+  filterChips?: string[];
 }

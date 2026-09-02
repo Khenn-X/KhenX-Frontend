@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -482,29 +482,6 @@ const CTA = () => (
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 const HomePage = () => {
-  useLayoutEffect(() => {
-    const previousScrollRestoration = window.history.scrollRestoration;
-    window.history.scrollRestoration = "manual";
-
-    const resetScroll = () => {
-      if (!window.location.hash) {
-        const previousScrollBehavior =
-          document.documentElement.style.scrollBehavior;
-        document.documentElement.style.scrollBehavior = "auto";
-        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-        document.documentElement.style.scrollBehavior = previousScrollBehavior;
-      }
-    };
-
-    resetScroll();
-    window.addEventListener("pageshow", resetScroll);
-
-    return () => {
-      window.removeEventListener("pageshow", resetScroll);
-      window.history.scrollRestoration = previousScrollRestoration;
-    };
-  }, []);
-
   return (
     <div>
       <Hero />

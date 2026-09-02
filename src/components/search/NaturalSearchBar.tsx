@@ -34,7 +34,7 @@ const NaturalSearchBar = ({
     const query = inputValue.trim();
     if (!query || isLoading) return;
 
-    search(query, {
+    search({ query }, {
       onSuccess: () => {
         setShowHints(false);
         onSearchComplete?.();
@@ -55,7 +55,7 @@ const NaturalSearchBar = ({
     setShowHints(false);
     // Auto-trigger search after suggestion selection
     setTimeout(() => {
-      search(suggestion, {
+      search({ query: suggestion }, {
         onSuccess: () => onSearchComplete?.(),
       });
     }, 50);

@@ -11,16 +11,21 @@ interface SearchState {
   results: IListing[];
   // Claude's interpretation of the query (shown to user as confirmation)
   interpretedQuery: string;
+  // Human-readable filter chips for display
+  filterChips: string[];
   // Loading state for the AI call
   isSearching: boolean;
   // Whether results are currently being displayed
   hasSearched: boolean;
+  // Error message if search failed
+  searchError: string | null;
 
   // Actions
   setQuery: (query: string) => void;
   setFilters: (filters: ParsedListingFilters) => void;
-  setResults: (results: IListing[], interpretedQuery?: string) => void;
+  setResults: (results: IListing[], interpretedQuery?: string, filterChips?: string[]) => void;
   setIsSearching: (value: boolean) => void;
+  setSearchError: (error: string | null) => void;
   clearSearch: () => void;
 }
 
@@ -31,17 +36,21 @@ export const useSearchStore = create<SearchState>()((set) => ({
   filters: DEFAULT_FILTERS,
   results: [],
   interpretedQuery: '',
+  filterChips: [],
   isSearching: false,
   hasSearched: false,
+  searchError: null,
 
   setQuery: (query) => set({ query }),
 
   setFilters: (filters) => set({ filters }),
 
-  setResults: (results, interpretedQuery = '') =>
-    set({ results, interpretedQuery, hasSearched: true }),
+  setResults: (results, interpretedQuery = '', filterChips = []) =>
+    set({ results, interpretedQuery, filterChips, hasSearched: true, searchError: null }),
 
   setIsSearching: (value) => set({ isSearching: value }),
+
+  setSearchError: (error) => set({ searchError: error }),
 
   clearSearch: () =>
     set({
@@ -49,8 +58,10 @@ export const useSearchStore = create<SearchState>()((set) => ({
       filters: DEFAULT_FILTERS,
       results: [],
       interpretedQuery: '',
+      filterChips: [],
       isSearching: false,
       hasSearched: false,
+      searchError: null,
     }),
 }));
 
@@ -60,4 +71,6 @@ export const selectSearchResults = (state: SearchState) => state.results;
 export const selectIsSearching = (state: SearchState) => state.isSearching;
 export const selectHasSearched = (state: SearchState) => state.hasSearched;
 export const selectInterpretedQuery = (state: SearchState) => state.interpretedQuery;
+export const selectFilterChips = (state: SearchState) => state.filterChips;
 export const selectFilters = (state: SearchState) => state.filters;
+export const selectSearchError = (state: SearchState) => state.searchError;

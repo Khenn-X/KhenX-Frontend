@@ -160,6 +160,7 @@ const ListingForm = ({
   const [neighbourhoodOptions, setNeighbourhoodOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [isLoadingNeighbourhoods, setIsLoadingNeighbourhoods] = useState(false);
   const isEditing = Boolean(defaultValues);
+  const initializedForId = useRef<string | undefined>(undefined);
 
   const {
     register,
@@ -241,7 +242,15 @@ const ListingForm = ({
   });
 
   useEffect(() => {
-    if (!defaultValues) return;
+    const valuesWithIdentity = defaultValues as (Partial<ListingFormData> & {
+      id?: string;
+      _id?: string;
+    }) | undefined;
+    const currentId = valuesWithIdentity?.id ?? valuesWithIdentity?._id;
+
+    if (initializedForId.current === currentId) return;
+
+    initializedForId.current = currentId;
     reset(buildFormDefaultValues(defaultValues));
   }, [defaultValues, reset]);
 

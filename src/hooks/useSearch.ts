@@ -4,19 +4,27 @@ import { useSearchStore } from '../store/search.store';
 import type { NaturalSearchPayload } from '../types/search.types';
 
 export const useNaturalSearch = () => {
-  const { setResults, setIsSearching } = useSearchStore();
+  const { setResults, setIsSearching, setQuery, setSearchError } = useSearchStore();
 
   const mutation = useMutation({
     mutationFn: (payload: NaturalSearchPayload) => searchApi.naturalSearch(payload),
-    onMutate: () => {
+    onMutate: (variables) => {
+      setQuery(variables.query);
       setIsSearching(true);
+      setSearchError(null);
     },
     onSuccess: (res) => {
-      setResults(res.data.listings, res.data.interpretedQuery);
+      console.log('[DIAG] onSuccess res:', res);
+      console.log('[DIAG] res.data.listings:', res.data.listings);
+      const filterChips = res.data.filterChips ?? [];
+      setResults(res.data.listings, res.data.interpretedQuery, filterChips);
+      console.log('[DIAG] store after setResults:', useSearchStore.getState().results);
       setIsSearching(false);
     },
-    onError: () => {
+    onError: (error: any) => {
       setIsSearching(false);
+      const errorMessage = error?.message || 'Search failed. Please try again.';
+      setSearchError(errorMessage);
     },
   });
 

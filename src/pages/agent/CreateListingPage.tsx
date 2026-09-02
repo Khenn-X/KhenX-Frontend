@@ -24,6 +24,7 @@ const CreateListingPage = () => {
       return undefined;
     }
   });
+  const [initialDefaultValues] = useState(draftValues);
   const { data: kycData, isLoading } = useKYCStatus();
   const [showPaywall, setShowPaywall] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
@@ -113,7 +114,7 @@ const CreateListingPage = () => {
         mode="create"
         onSubmit={handleCreateListing}
         onDraft={saveDraft}
-        defaultValues={draftValues}
+        defaultValues={initialDefaultValues}
         isPending={isPending}
       />
       {showPaywall && (

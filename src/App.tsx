@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import AppRouter from './routes/AppRouter';
 import { useMe } from './hooks/useAuth';
 import CustomCursor from './components/shared/CustomCursor';
+import ScrollToTop from './components/shared/ScrollToTop';
 
 /**
  * Bootstraps the authenticated user into Zustand on app load.
@@ -32,6 +33,9 @@ const App = () => {
     <>
       {/* Silently resolve the current user on mount */}
       <AuthBootstrap />
+
+      {/* Global scroll-to-top on route changes */}
+      <ScrollToTop />
 
       {/* All routes */}
       <AppRouter />
