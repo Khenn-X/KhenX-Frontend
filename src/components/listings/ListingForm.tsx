@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useForm, Controller, type FieldErrors } from 'react-hook-form';
+import { useForm, useWatch, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FileText, MapPin, BedDouble, Wallet, Sparkles, ImageIcon, Send, ChevronDown, type LucideIcon } from 'lucide-react';
+import { FileText, MapPin, BedDouble, Wallet, Sparkles, ImageIcon, Send, ChevronDown, RotateCcw, type LucideIcon } from 'lucide-react';
 import { listingSchema, normalizeListingSubmissionData, type ListingFormData } from '../../lib/validators';
 import LandDetailsSection from './LandDetailsSection';
 import BuildingDetailsSection from './BuildingDetailsSection';
@@ -47,6 +47,7 @@ interface ListingFormProps {
   existingPhotos?: string[];
   onSubmit?: (data: ListingFormData, photos: File[]) => void;
   onDraft?: (data: ListingFormData) => void;
+  onClearDraft?: () => void;
   isPending?: boolean;
   submitLabel?: string;
   mode?: 'create' | 'edit';
@@ -73,7 +74,7 @@ const buildFormDefaultValues = (values?: Partial<ListingFormData>): Partial<List
     nearbyAmenities: {
       ...(values?.nearbyAmenities ?? {}),
     },
-    pricePeriod: values?.pricePeriod ?? 'yearly',
+    pricePeriod: values?.pricePeriod ?? (values?.listingType === 'sale' ? undefined : 'yearly'),
     listingType: values?.listingType ?? 'rent',
     propertyCategory,
     propertyType: values?.propertyType ?? (isLand ? 'land' : 'apartment'),
@@ -157,6 +158,7 @@ const ListingForm = ({
   existingPhotos,
   onSubmit,
   onDraft,
+  onClearDraft,
   isPending,
   submitLabel = 'Submit listing',
   mode = 'create',
@@ -171,6 +173,7 @@ const ListingForm = ({
   });
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const previewRequestId = useRef(0);
+  const skipNextDraftSave = useRef(false);
   const [isAdditionalDetailsExpanded, setIsAdditionalDetailsExpanded] = useState(() => {
     if (mode !== 'edit' || !defaultValues) return false;
 
@@ -225,7 +228,7 @@ const ListingForm = ({
   const selectedPropertyCategory = watch('propertyCategory') as ListingFormData['propertyCategory'] | undefined;
   const selectedPropertyType = watch('propertyType') as ListingFormData['propertyType'] | undefined;
   const selectedListingType = watch('listingType') as ListingFormData['listingType'] | undefined;
-  const watchedValues = watch();
+  const watchedValues = useWatch({ control });
   const onDraftRef = useRef(onDraft);
   const isBuildingCategory = selectedPropertyCategory === 'building';
   const isLandCategory = selectedPropertyCategory === 'land';
@@ -326,6 +329,14 @@ const ListingForm = ({
   }, [isLandCategory, selectedListingType, setValue]);
 
   useEffect(() => {
+    if (selectedListingType === 'sale') {
+      setValue('pricePeriod', undefined, { shouldValidate: true, shouldDirty: true });
+    } else if (!getValues('pricePeriod')) {
+      setValue('pricePeriod', isLandCategory ? 'yearly' : 'yearly', { shouldValidate: true, shouldDirty: true });
+    }
+  }, [selectedListingType, isLandCategory, getValues, setValue]);
+
+  useEffect(() => {
     if (!selectedPropertyCategory) return;
 
     if (selectedPropertyCategory === 'building') {
@@ -359,12 +370,26 @@ const ListingForm = ({
   useEffect(() => {
     if (!onDraftRef.current) return undefined;
 
+    if (skipNextDraftSave.current) {
+      skipNextDraftSave.current = false;
+      return undefined;
+    }
+
     const timeoutId = window.setTimeout(() => {
       onDraftRef.current?.(watchedValues as ListingFormData);
     }, 250);
 
     return () => window.clearTimeout(timeoutId);
   }, [watchedValues]);
+
+  const handleClearOrReset = () => {
+    skipNextDraftSave.current = true;
+    reset(buildFormDefaultValues(mode === 'edit' ? defaultValues : undefined));
+    setPhotos([]);
+    setCompletenessPreview(null);
+    setIsAdditionalDetailsExpanded(mode === 'edit' ? isAdditionalDetailsExpanded : false);
+    onClearDraft?.();
+  };
 
   useEffect(() => {
     const requestId = ++previewRequestId.current;
@@ -402,7 +427,7 @@ const ListingForm = ({
   return (
     <div className="space-y-6">
       {/* Header — same dark gradient hero pattern used on the admin neighbourhoods page */}
-      <div className="flex flex-col gap-4 rounded-3xl bg-linear-to-br from-[#0A1628] to-[#0F172A] p-6 sm:p-8">
+      <div className="flex flex-col gap-4 rounded-3xl bg-linear-to-br from-[#0A1628] to-[#0F172A] p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
         <div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#00C9A7]/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#00C9A7]">
             {mode === 'edit' ? 'Editing listing' : 'New listing'}
@@ -416,6 +441,14 @@ const ListingForm = ({
               : 'Fill in accurate details and clear photos. Well-described listings get reviewed and approved faster.'}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={handleClearOrReset}
+          className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+        >
+          <RotateCcw className="h-4 w-4" />
+          {mode === 'edit' ? 'Reset form' : 'Clear form'}
+        </button>
       </div>
 
       <form onSubmit={handleSubmit(onFormSubmit, onFormError)} className="space-y-5">
@@ -547,13 +580,15 @@ const ListingForm = ({
               />
             </FormField>
 
-            <FormField label="Price period" error={errors.pricePeriod?.message} required>
-              <select {...register('pricePeriod')} className={inputClass(!!errors.pricePeriod)}>
-                {pricePeriodOptions.map((p) => (
-                  <option key={p} value={p}>{capitalize(p)}</option>
-                ))}
-              </select>
-            </FormField>
+            {selectedListingType !== 'sale' && (
+              <FormField label="Price period" error={errors.pricePeriod?.message} required>
+                <select {...register('pricePeriod')} className={inputClass(!!errors.pricePeriod)}>
+                  {pricePeriodOptions.map((p) => (
+                    <option key={p} value={p}>{capitalize(p)}</option>
+                  ))}
+                </select>
+              </FormField>
+            )}
 
           </div>
         </FormSection>

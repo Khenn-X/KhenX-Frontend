@@ -71,7 +71,7 @@ const ListingReviewCard = ({ listing }: ListingReviewCardProps) => {
         </div>
 
         <div className="flex items-center justify-between">
-          <PriceDisplay price={listing.price} pricePeriod={listing.pricePeriod} size="sm" />
+          <PriceDisplay price={listing.price} pricePeriod={listing.pricePeriod} listingType={listing.listingType} size="sm" />
           {listing.serviceCharge && (
             <span className="text-xs text-slate-400">+{formatNaira(listing.serviceCharge)} SC</span>
           )}

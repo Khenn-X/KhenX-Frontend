@@ -66,6 +66,13 @@ const CreateListingPage = () => {
     }
   };
 
+  const clearDraft = () => {
+    setDraftValues(undefined);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+    }
+  };
+
   const handleCreateListing = (data: ListingFormData, photos: File[]) => {
     const sanitizedData = normalizeListingSubmissionData(data);
     const normalizedPayload: CreateListingPayload = {
@@ -114,6 +121,7 @@ const CreateListingPage = () => {
         mode="create"
         onSubmit={handleCreateListing}
         onDraft={saveDraft}
+        onClearDraft={clearDraft}
         defaultValues={initialDefaultValues}
         isPending={isPending}
       />

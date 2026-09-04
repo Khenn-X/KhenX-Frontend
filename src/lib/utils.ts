@@ -63,10 +63,11 @@ export const timeAgo = (date: string | Date): string => {
  */
 export const formatPriceWithPeriod = (
   price: number,
-  period?: 'yearly' | 'monthly' | 'nightly' | null
+  period?: 'yearly' | 'monthly' | 'nightly' | null,
+  listingType?: 'rent' | 'sale' | 'short-let'
 ): string => {
   const base = formatNaira(price);
-  if (!period) return base;
+  if (!period || listingType === 'sale') return base;
 
   const periodMap = { yearly: 'yr', monthly: 'mo', nightly: 'night' };
   return `${base}/${periodMap[period]}`;

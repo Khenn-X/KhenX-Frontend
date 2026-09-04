@@ -11,6 +11,7 @@ test('includes the correct suffix for supported periods', () => {
   assert.equal(formatPriceWithPeriod(800000, 'yearly'), '₦800,000/yr');
   assert.equal(formatPriceWithPeriod(800000, 'monthly'), '₦800,000/mo');
   assert.equal(formatPriceWithPeriod(800000, 'nightly'), '₦800,000/night');
+  assert.equal(formatPriceWithPeriod(800000, 'yearly', 'sale'), '₦800,000');
 });
 
 test('shows bed and bath stats for building listings but hides them for land listings', () => {

@@ -1,16 +1,17 @@
-import type { PricePeriod } from '../../types/listing.types';
+import type { ListingType, PricePeriod } from '../../types/listing.types';
 import { formatNaira } from '../../lib/utils';
 import { cn } from '../../lib/utils';
 
 interface PriceDisplayProps {
   price: number;
-  pricePeriod: PricePeriod;
+  pricePeriod?: PricePeriod | null;
+  listingType: ListingType;
   serviceCharge?: number;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-const periodLabel: Record<PricePeriod, string> = {
+const periodLabel: Partial<Record<PricePeriod, string>> = {
   yearly: '/yr',
   monthly: '/mo',
   nightly: '/night',
@@ -25,6 +26,7 @@ const sizeMap = {
 const PriceDisplay = ({
   price,
   pricePeriod,
+  listingType,
   serviceCharge,
   size = 'md',
   className,
@@ -37,9 +39,11 @@ const PriceDisplay = ({
         <span className={cn('text-[#0A1628]', styles.price)}>
           {formatNaira(price)}
         </span>
-        <span className={cn('text-slate-500', styles.period)}>
-          {periodLabel[pricePeriod]}
-        </span>
+        {listingType !== 'sale' && pricePeriod && (
+          <span className={cn('text-slate-500', styles.period)}>
+            {periodLabel[pricePeriod]}
+          </span>
+        )}
       </div>
       {serviceCharge && (
         <span className={cn('text-slate-400 mt-0.5', styles.charge)}>

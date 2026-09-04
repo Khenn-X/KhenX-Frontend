@@ -306,6 +306,7 @@ const ListingCard = ({
           <PriceDisplay
             price={listing.price}
             pricePeriod={listing.pricePeriod}
+            listingType={listing.listingType}
             size="sm"
           />
           {listing.serviceCharge ? (

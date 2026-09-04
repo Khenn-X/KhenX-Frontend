@@ -107,9 +107,7 @@ export const baseListingSchema = z.object({
   state: z.string().optional(),
   nearbyLandmark: z.string().optional(),
   price: z.coerce.number({ error: 'Please enter a valid price' }).positive('Price must be greater than zero'),
-  pricePeriod: z.enum(['yearly', 'monthly', 'nightly', 'one-time'], {
-    error: 'Please select a price period',
-  }),
+  pricePeriod: z.enum(['yearly', 'monthly', 'nightly', 'one-time']).optional(),
   serviceCharge: optionalCoercedNumber(0, 'Service charge cannot be negative'),
   features: z.object({
     generator: z.boolean().default(false),
@@ -302,7 +300,7 @@ const buildingDetailsSchema = z
 const landListingSchema = baseListingSchema.extend({
   propertyCategory: z.literal('land'),
   propertyType: landPropertyTypeSchema,
-  pricePeriod: z.enum(['yearly', 'one-time'], { error: 'Please select a price period' }),
+  pricePeriod: z.enum(['yearly', 'one-time']).optional(),
   bedrooms: z.undefined().optional(),
   bathrooms: z.undefined().optional(),
   landDetails: landDetailsSchema,
@@ -319,7 +317,7 @@ const landListingSchema = baseListingSchema.extend({
 const buildingListingSchema = baseListingSchema.extend({
   propertyCategory: z.literal('building'),
   propertyType: buildingPropertyTypeSchema,
-  pricePeriod: z.enum(['yearly', 'monthly', 'nightly'], { error: 'Please select a price period' }),
+  pricePeriod: z.enum(['yearly', 'monthly', 'nightly']).optional(),
   landDetails: z.unknown().superRefine((value, ctx) => {
     if (value !== undefined) {
       ctx.addIssue({
@@ -348,6 +346,14 @@ export const listingSchema = z.discriminatedUnion('propertyCategory', [landListi
         message: 'Bathrooms are required for building listings',
       });
     }
+
+    if (data.listingType !== 'sale' && !data.pricePeriod) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pricePeriod'], message: 'Please select a price period' });
+    }
+  }
+
+  if (data.propertyCategory === 'land' && data.listingType !== 'sale' && !data.pricePeriod) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pricePeriod'], message: 'Please select a price period' });
   }
 
 });
@@ -524,6 +530,10 @@ export const normalizeListingSubmissionData = (data: ListingFormData): ListingFo
     nearbyPlaces: data.nearbyPlaces ?? ((data as ListingFormData & { landDetails?: { nearbyPlaces?: ListingFormData['nearbyPlaces'] } }).landDetails?.nearbyPlaces),
     nearbyAmenities: data.nearbyAmenities ?? ((data as ListingFormData & { buildingDetails?: { nearbyAmenities?: ListingFormData['nearbyAmenities'] } }).buildingDetails?.nearbyAmenities),
   } as ListingFormData;
+
+  if (data.listingType === 'sale') {
+    delete (basePayload as Partial<ListingFormData>).pricePeriod;
+  }
 
   if (data.propertyCategory === 'land') {
     const { bedrooms: _bedrooms, bathrooms: _bathrooms, buildingDetails: _buildingDetails, ...rest } = basePayload as Record<string, unknown>;

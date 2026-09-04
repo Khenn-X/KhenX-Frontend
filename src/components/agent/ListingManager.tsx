@@ -89,7 +89,7 @@ const ListingManager = () => {
                   </span>
                   <span className="text-slate-300">·</span>
                   <span className="font-medium text-slate-500">
-                    {formatPriceWithPeriod(listing.price, listing.pricePeriod)}
+                    {formatPriceWithPeriod(listing.price, listing.pricePeriod, listing.listingType)}
                   </span>
                 </div>
 

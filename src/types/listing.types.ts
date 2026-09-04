@@ -219,7 +219,7 @@ export interface IListing {
   state?: string;
   nearbyLandmark?: string;
   price: number;
-  pricePeriod: PricePeriod;
+  pricePeriod?: PricePeriod;
   serviceCharge?: number;
   features: IListingFeatures;
   landDetails?: ILandDetails;
@@ -266,7 +266,7 @@ export interface CreateListingPayload {
   state?: string;
   nearbyLandmark?: string;
   price: number;
-  pricePeriod: PricePeriod;
+  pricePeriod?: PricePeriod;
   serviceCharge?: number;
   features: IListingFeatures;
   landDetails?: ILandDetails;

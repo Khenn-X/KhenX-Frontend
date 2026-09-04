@@ -24,7 +24,8 @@ import PropertyMap from "../../components/listings/PropertyMap";
 
 const formatPrice = (price: number) => "₦" + price.toLocaleString("en-NG");
 
-const formatPricePeriod = (period: string) => {
+const formatPricePeriod = (period: string | undefined, listingType: ListingType) => {
+  if (listingType === "sale") return "";
   if (period === "yearly") return "/ yr";
   if (period === "monthly") return "/ mo";
   if (period === "nightly") return "/ night";
@@ -568,7 +569,8 @@ const ListingDetailPage = () => {
       });
       return;
     }
-    isSaved ? unsave(id) : save(id);
+    if (isSaved) unsave(id);
+    else save(id);
   };
 
   const heroRef = useRef<HTMLDivElement>(null);
@@ -931,7 +933,7 @@ const ListingDetailPage = () => {
               </div>
               <div style={{ fontSize: 12, color: "#64748B" }}>
                 {formatPrice(listing.price)}{" "}
-                {formatPricePeriod(listing.pricePeriod)}
+                {formatPricePeriod(listing.pricePeriod, listing.listingType)}
               </div>
             </div>
             {/* In-page nav, desktop only */}
@@ -1177,7 +1179,7 @@ const ListingDetailPage = () => {
                           padding: 0,
                         }}
                       >
-                        {formatPricePeriod(listing.pricePeriod)}
+                        {formatPricePeriod(listing.pricePeriod, listing.listingType)}
                         {listing.serviceCharge ? (
                           <>
                             <span
@@ -1226,7 +1228,7 @@ const ListingDetailPage = () => {
                             }}
                           >
                             <span>
-                              Base {formatPricePeriod(listing.pricePeriod)}
+                              Base {formatPricePeriod(listing.pricePeriod, listing.listingType)}
                             </span>
                             <span style={{ color: "#F1F5F9" }}>
                               {formatPrice(listing.price)}
@@ -1262,7 +1264,7 @@ const ListingDetailPage = () => {
                             }}
                           >
                             <span>
-                              Total {formatPricePeriod(listing.pricePeriod)}
+                              Total {formatPricePeriod(listing.pricePeriod, listing.listingType)}
                             </span>
                             <span style={{ color: "#00C9A7" }}>
                               {formatPrice(annualTotal)}
@@ -2744,7 +2746,7 @@ const ListingDetailPage = () => {
             {formatPrice(listing.price)}
           </div>
           <div style={{ fontSize: 10.5, color: "#94A3B8" }}>
-            {formatPricePeriod(listing.pricePeriod)}
+            {formatPricePeriod(listing.pricePeriod, listing.listingType)}
           </div>
         </div>
         <button

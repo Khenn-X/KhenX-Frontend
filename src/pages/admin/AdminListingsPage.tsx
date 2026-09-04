@@ -45,12 +45,12 @@ const TypeBadge = ({ listingType }: { listingType: IListing['listingType'] }) =>
   </span>
 );
 
-const PriceDisplay = ({ price, pricePeriod }: { price: number; pricePeriod: IListing['pricePeriod'] | null }) => {
+const PriceDisplay = ({ price, pricePeriod, listingType }: { price: number; pricePeriod: IListing['pricePeriod'] | null; listingType: IListing['listingType'] }) => {
   const periodLabel = pricePeriod === 'yearly' ? 'yr' : pricePeriod === 'monthly' ? 'mo' : pricePeriod === 'nightly' ? 'night' : '';
   return (
     <div className="flex items-baseline gap-1">
       <span className="text-base font-bold text-[#0F172A]">{formatNaira(price)}</span>
-      {pricePeriod && <span className="text-xs text-slate-400">/{periodLabel}</span>}
+      {listingType !== 'sale' && pricePeriod && <span className="text-xs text-slate-400">/{periodLabel}</span>}
     </div>
   );
 };
@@ -181,7 +181,7 @@ const ListingCard = ({ listing, isHighlighted = false }: { listing: IListing; is
           )}
         </div>
         <div className="flex items-end justify-between">
-          <PriceDisplay price={listing.price} pricePeriod={listing.pricePeriod} />
+          <PriceDisplay price={listing.price} pricePeriod={listing.pricePeriod} listingType={listing.listingType} />
           {listing.serviceCharge ? <span className="text-[11px] text-slate-400">+{formatNaira(listing.serviceCharge)} SC</span> : null}
         </div>
         <div className="flex items-center justify-between text-xs">
@@ -259,7 +259,7 @@ const ListingRow = ({ listing, isHighlighted = false }: { listing: IListing; isH
           </div>
         </div>
         <div className="flex shrink-0 items-center justify-between gap-4 sm:justify-end">
-          <PriceDisplay price={listing.price} pricePeriod={listing.pricePeriod} />
+          <PriceDisplay price={listing.price} pricePeriod={listing.pricePeriod} listingType={listing.listingType} />
           <div className="flex items-center gap-1.5">
             {listing.status === 'pending' && (
               <>

@@ -97,6 +97,7 @@ const ListingDetail = ({ listing }: ListingDetailProps) => {
             <PriceDisplay
               price={listing.price}
               pricePeriod={listing.pricePeriod}
+              listingType={listing.listingType}
               serviceCharge={listing.serviceCharge}
               size="lg"
             />
