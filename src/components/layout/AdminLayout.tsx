@@ -11,7 +11,6 @@ import {
   ChevronRight,
   UserCheck,
   Menu,
-  Bell,
   Settings,
   User,
   DollarSign,
@@ -23,6 +22,7 @@ import { useAdminStats } from "../../hooks/useAdmin";
 import { ROUTES } from "../../constants/routes";
 import { cn, getInitials } from "../../lib/utils";
 import logo from "../../assets/kgreen.png";
+import NotificationBell from "../notifications/NotificationBell";
 
 type NavItem = {
   label: string;
@@ -227,12 +227,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   // Flatten across groups for lookups that don't care about section structure
   const allItems = navGroups.flatMap((g) => g.items);
   const currentPage = allItems.find((item) => item.to === location.pathname);
-
-  // Aggregate pending count across every nav item that tracks one — drives the topbar bell.
-  const totalPending = allItems.reduce(
-    (sum, item) => sum + (getBadgeCount(item.badgeKey) ?? 0),
-    0,
-  );
 
   return (
     <div className="flex min-h-screen bg-[#F8FAFC]">
@@ -443,26 +437,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <button
-              className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-              aria-label={
-                totalPending > 0
-                  ? `${totalPending} pending items`
-                  : "Notifications"
-              }
-              title={
-                totalPending > 0
-                  ? `${totalPending} pending across your queues`
-                  : "No pending items"
-              }
-            >
-              <Bell className="h-4.5 w-4.5" />
-              {totalPending > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-[#F8FAFC]">
-                  {totalPending > 99 ? "99+" : totalPending}
-                </span>
-              )}
-            </button>
+            <NotificationBell />
 
             {user && (
               <div className="flex items-center gap-3">

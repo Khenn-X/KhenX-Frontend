@@ -104,6 +104,18 @@ const ListingManager = () => {
                     <Eye className="h-3 w-3" /> {listing.viewCount.toLocaleString()} views
                   </span>
                 </div>
+                <div className="mt-2 flex items-center gap-2 text-xs">
+                  <span className="font-medium text-slate-500">Completeness</span>
+                  <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-[#00C9A7]" style={{ width: `${listing.completenessPercentage ?? 0}%` }} />
+                  </div>
+                  <span className={`font-semibold ${(listing.completenessPercentage ?? 0) >= 70 ? 'text-[#0F766E]' : 'text-amber-600'}`}>{listing.completenessPercentage ?? 0}%</span>
+                </div>
+                {(listing.completenessBreakdown?.some((group) => !group.earned)) ?? false ? (
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Focus next: {listing.completenessBreakdown?.filter((group) => !group.earned).slice(0, 2).map((group) => `${group.label} (+${group.pointsAvailable}%)`).join(' · ')}
+                  </p>
+                ) : null}
               </div>
 
               {/* Actions */}

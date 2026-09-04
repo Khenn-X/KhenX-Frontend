@@ -231,6 +231,15 @@ export interface IListing {
   deactivatedAt?: string | null; // ISO date when listing was deactivated, for grace period display
   rejectionReason?: string;
   isFeatured: boolean;
+  completenessPercentage?: number;
+  completenessMissingFields?: string[];
+  completenessBreakdown?: Array<{
+    group: string;
+    label: string;
+    pointsAvailable: number;
+    earned: boolean;
+  }>;
+  canBeFeatured?: boolean;
   viewCount: number;
   createdAt: string;
   updatedAt: string;

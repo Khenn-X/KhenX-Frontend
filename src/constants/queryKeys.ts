@@ -68,6 +68,15 @@ export const queryKeys = {
     payments: ['admin', 'payments'] as const,
   },
 
+  payments: {
+    history: (params?: object) => ['payments', 'history', params] as const,
+  },
+
+  notifications: {
+    all: (params?: object) => ['notifications', 'all', params] as const,
+    unreadCount: ['notifications', 'unread-count'] as const,
+  },
+
   superadmin: {
     pendingAdmins: ['superadmin', 'pending-admins'] as const,
   },

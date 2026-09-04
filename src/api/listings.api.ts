@@ -1,7 +1,18 @@
 import api from './axios';
 import type { ApiResponse, PaginatedResponse } from '../types/api.types';
 import type { IListing, CreateListingPayload, UpdateListingPayload } from '../types/listing.types';
+import type { ListingFormData } from '../lib/validators';
 import type { ParsedListingFilters } from '../types/search.types';
+
+export interface ListingCompletenessPreview {
+  percentage: number;
+  breakdown: Array<{
+    group: string;
+    label: string;
+    pointsAvailable: number;
+    earned: boolean;
+  }>;
+}
 
 export interface ListingsQueryParams extends ParsedListingFilters {
   area?: string;
@@ -10,6 +21,10 @@ export interface ListingsQueryParams extends ParsedListingFilters {
 }
 
 export const listingsApi = {
+  previewCompleteness: async (draft: Partial<ListingFormData>): Promise<ApiResponse<ListingCompletenessPreview>> => {
+    const { data } = await api.post('/listings/completeness-preview', draft);
+    return data;
+  },
   // Public — browse all active listings
   getListings: async (params?: ListingsQueryParams): Promise<PaginatedResponse<IListing>> => {
     // Map areaName to area for backend compatibility

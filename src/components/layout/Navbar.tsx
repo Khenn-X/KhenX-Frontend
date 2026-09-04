@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 // Add this import near the top, with your other imports
 import logo from "../../assets/kgreen.png"; // adjust path/extension to match your file
+import NotificationBell from "../notifications/NotificationBell";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -662,6 +663,7 @@ const Navbar = () => {
           <div className="hidden lg:flex items-center gap-2 shrink-0">
             {isAuthenticated && user ? (
               <>
+                <NotificationBell />
                 {isAgent && (
                   <Link
                     to="/agent/listings/new"

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useForm, Controller, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FileText, MapPin, BedDouble, Wallet, Sparkles, ImageIcon, Send, type LucideIcon } from 'lucide-react';
+import { FileText, MapPin, BedDouble, Wallet, Sparkles, ImageIcon, Send, ChevronDown, type LucideIcon } from 'lucide-react';
 import { listingSchema, normalizeListingSubmissionData, type ListingFormData } from '../../lib/validators';
 import LandDetailsSection from './LandDetailsSection';
 import BuildingDetailsSection from './BuildingDetailsSection';
@@ -34,12 +34,16 @@ const PROPERTY_TYPE_LABELS: Record<string, string> = {
 };
 import { LAGOS_AREAS } from '../../constants/lagos-areas';
 import { neighbourhoodApi } from '../../api/neighbourhood.api';
+import { listingsApi, type ListingCompletenessPreview } from '../../api/listings.api';
 import { FeaturesCheckbox } from './FeaturesCheckbox';
 import PhotoUploader from './PhotoUploader';
 import { capitalize, cn } from '../../lib/utils';
 
 interface ListingFormProps {
-  defaultValues?: Partial<ListingFormData>;
+  defaultValues?: Partial<ListingFormData> & {
+    completenessPercentage?: number;
+    completenessBreakdown?: Array<{ group: string; label: string; pointsAvailable: number; earned: boolean }>;
+  };
   existingPhotos?: string[];
   onSubmit?: (data: ListingFormData, photos: File[]) => void;
   onDraft?: (data: ListingFormData) => void;
@@ -150,6 +154,7 @@ const FormField = ({ label, error, required, children }: FormFieldProps) => (
 
 const ListingForm = ({
   defaultValues,
+  existingPhotos,
   onSubmit,
   onDraft,
   isPending,
@@ -157,6 +162,43 @@ const ListingForm = ({
   mode = 'create',
 }: ListingFormProps) => {
   const [photos, setPhotos] = useState<File[]>([]);
+  const [completenessPreview, setCompletenessPreview] = useState<ListingCompletenessPreview | null>(() => {
+    if (defaultValues?.completenessPercentage == null || !defaultValues.completenessBreakdown) return null;
+    return {
+      percentage: defaultValues.completenessPercentage,
+      breakdown: defaultValues.completenessBreakdown,
+    };
+  });
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const previewRequestId = useRef(0);
+  const [isAdditionalDetailsExpanded, setIsAdditionalDetailsExpanded] = useState(() => {
+    if (mode !== 'edit' || !defaultValues) return false;
+
+    const values = defaultValues as Partial<ListingFormData> & {
+      state?: string;
+      lga?: string;
+      nearbyLandmark?: string;
+      coordinates?: { latitude?: number; longitude?: number };
+      buildingDetails?: Record<string, unknown>;
+      landDetails?: Record<string, unknown>;
+    };
+    const hasMeaningfulValue = (value: unknown): boolean => {
+      if (Array.isArray(value)) return value.length > 0;
+      if (value && typeof value === 'object') return Object.values(value).some(hasMeaningfulValue);
+      return value !== undefined && value !== null && value !== '' && value !== false;
+    };
+    const hasLocationDetails = Boolean(
+      values.neighbourhoodId || values.estateName || values.state || values.lga || values.nearbyLandmark ||
+      values.coordinates?.latitude != null || values.coordinates?.longitude != null
+    );
+    const hasAmenities = Object.values(values.features ?? {}).some(Boolean) ||
+      Object.values(values.nearbyPlaces ?? {}).some((entries) => Array.isArray(entries) && entries.length > 0) ||
+      Object.values(values.nearbyAmenities ?? {}).some((entries) => Array.isArray(entries) && entries.length > 0);
+    const hasPropertyDetails = Boolean(values.serviceCharge) ||
+      hasMeaningfulValue(values.buildingDetails) || hasMeaningfulValue(values.landDetails);
+
+    return hasLocationDetails || hasAmenities || hasPropertyDetails;
+  });
   const [neighbourhoodOptions, setNeighbourhoodOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [isLoadingNeighbourhoods, setIsLoadingNeighbourhoods] = useState(false);
   const isEditing = Boolean(defaultValues);
@@ -187,6 +229,7 @@ const ListingForm = ({
   const onDraftRef = useRef(onDraft);
   const isBuildingCategory = selectedPropertyCategory === 'building';
   const isLandCategory = selectedPropertyCategory === 'land';
+  const existingPhotoCount = ((defaultValues as { photos?: string[] } | undefined)?.photos?.length ?? existingPhotos?.length ?? 0);
   const propertyTypeOptions = isLandCategory ? LAND_PROPERTY_TYPES : BUILDING_PROPERTY_TYPES;
   const defaultBuildingPropertyType = BUILDING_PROPERTY_TYPES[0];
   const pricePeriodOptions = isLandCategory
@@ -252,6 +295,14 @@ const ListingForm = ({
 
     initializedForId.current = currentId;
     reset(buildFormDefaultValues(defaultValues));
+    if (defaultValues?.completenessPercentage != null && defaultValues.completenessBreakdown) {
+      setCompletenessPreview({
+        percentage: defaultValues.completenessPercentage,
+        breakdown: defaultValues.completenessBreakdown,
+      });
+    } else {
+      setCompletenessPreview(null);
+    }
   }, [defaultValues, reset]);
 
   useEffect(() => {
@@ -315,6 +366,27 @@ const ListingForm = ({
     return () => window.clearTimeout(timeoutId);
   }, [watchedValues]);
 
+  useEffect(() => {
+    const requestId = ++previewRequestId.current;
+    setIsPreviewLoading(true);
+    const previewDraft = {
+      ...watchedValues,
+      photos: Array.from({ length: existingPhotoCount + photos.length }, () => 'draft-photo'),
+    };
+    const timeoutId = window.setTimeout(() => {
+      void listingsApi.previewCompleteness(previewDraft as Partial<ListingFormData>)
+        .then((response) => {
+          if (requestId === previewRequestId.current) setCompletenessPreview(response.data);
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          if (requestId === previewRequestId.current) setIsPreviewLoading(false);
+        });
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [watchedValues, photos, existingPhotoCount]);
+
   const onFormSubmit = (data: ListingFormData) => {
     const normalizedData = normalizeListingSubmissionData(data);
     onSubmit?.(normalizedData, photos);
@@ -323,6 +395,9 @@ const ListingForm = ({
   const onFormError = (formErrors: FieldErrors<ListingFormData>) => {
     console.error('Listing form validation failed:', formErrors);
   };
+
+  const completenessPercentage = completenessPreview?.percentage;
+  const missingCompletenessGroups = completenessPreview?.breakdown.filter((group) => !group.earned).slice(0, 3) ?? [];
 
   return (
     <div className="space-y-6">
@@ -344,6 +419,25 @@ const ListingForm = ({
       </div>
 
       <form onSubmit={handleSubmit(onFormSubmit, onFormError)} className="space-y-5">
+        <section className="rounded-3xl border border-[#00C9A7]/20 bg-[#F0FDF9] p-5 shadow-sm sm:p-6" aria-live="polite">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#0F766E]">Listing completeness</p>
+              <p className="mt-1 text-sm text-slate-600">Complete the highest-impact details to improve visibility.</p>
+            </div>
+            <span className="text-2xl font-bold text-[#0F766E]">
+              {isPreviewLoading && completenessPreview == null ? '…' : `${completenessPreview?.percentage ?? 0}%`}
+            </span>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white">
+            <div className="h-full rounded-full bg-[#00C9A7] transition-all" style={{ width: `${completenessPreview?.percentage ?? 0}%` }} />
+          </div>
+          {missingCompletenessGroups.length > 0 && (
+            <p className="mt-3 text-xs text-slate-600">
+              Focus next: {missingCompletenessGroups.map((group) => `${group.label} (+${group.pointsAvailable}%)`).join(' · ')}
+            </p>
+          )}
+        </section>
 
         {/* Basic info */}
         <FormSection title="Basic information" icon={FileText}>
@@ -406,70 +500,8 @@ const ListingForm = ({
                 ))}
               </select>
             </FormField>
-
-            <FormField label="Neighbourhood" error={errors.neighbourhoodId?.message}>
-              <select {...register('neighbourhoodId')} className={inputClass(!!errors.neighbourhoodId)} disabled={isLoadingNeighbourhoods}>
-                <option value="">{isLoadingNeighbourhoods ? 'Loading neighbourhoods…' : 'Select neighbourhood (optional)'}</option>
-                {neighbourhoodOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </FormField>
           </div>
 
-          <FormField label="Estate name (optional)" error={errors.estateName?.message}>
-            <input
-              {...register('estateName')}
-              placeholder="e.g. Chevron Estate"
-              className={inputClass(!!errors.estateName)}
-            />
-          </FormField>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="State" error={errors.state?.message}>
-              <input
-                {...register('state')}
-                placeholder="e.g. Lagos"
-                className={inputClass(!!errors.state)}
-              />
-            </FormField>
-
-            <FormField label="LGA" error={errors.lga?.message}>
-              <input
-                {...register('lga')}
-                placeholder="e.g. Ikeja"
-                className={inputClass(!!errors.lga)}
-              />
-            </FormField>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="Latitude" error={errors.coordinates?.latitude?.message}>
-              <input
-                {...register('coordinates.latitude', { valueAsNumber: true })}
-                type="number"
-                step="any"
-                placeholder="e.g. 6.5244"
-                className={inputClass(!!errors.coordinates?.latitude)}
-              />
-            </FormField>
-            <FormField label="Longitude" error={errors.coordinates?.longitude?.message}>
-              <input
-                {...register('coordinates.longitude', { valueAsNumber: true })}
-                type="number"
-                step="any"
-                placeholder="e.g. 3.3792"
-                className={inputClass(!!errors.coordinates?.longitude)}
-              />
-            </FormField>
-          </div>
-
-          <FormField label="Nearby landmark" error={errors.nearbyLandmark?.message}>
-            <input
-              {...register('nearbyLandmark')}
-              placeholder="e.g. Opposite XYZ Mall"
-              className={inputClass(!!errors.nearbyLandmark)}
-            />
-          </FormField>
         </FormSection>
 
         {/* Rooms */}
@@ -503,9 +535,9 @@ const ListingForm = ({
           </FormSection>
         )}
 
-        {/* Pricing */}
+        {/* Pricing core */}
         <FormSection title="Pricing" icon={Wallet}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Asking price (₦)" error={errors.price?.message} required>
               <input
                 {...register('price', { valueAsNumber: true })}
@@ -523,35 +555,80 @@ const ListingForm = ({
               </select>
             </FormField>
 
-            <FormField label="Service charge (₦, optional)" error={errors.serviceCharge?.message}>
-              <input
-                {...register('serviceCharge', { valueAsNumber: true })}
-                type="number"
-                placeholder="e.g. 200000"
-                className={inputClass(!!errors.serviceCharge)}
-              />
-            </FormField>
           </div>
         </FormSection>
 
-        {isLandCategory && (
-          <LandDetailsSection register={register} control={control} errors={errors} />
-        )}
+        <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
+          <button
+            type="button"
+            onClick={() => setIsAdditionalDetailsExpanded((expanded) => !expanded)}
+            aria-expanded={isAdditionalDetailsExpanded}
+            className="flex w-full items-center justify-between gap-4 p-5 text-left transition-colors hover:bg-slate-50 sm:p-6"
+          >
+            <span>
+              <span className="block font-semibold text-[#0F172A]">Add more details</span>
+              <span className="mt-1 block text-xs text-slate-500">
+                {completenessPercentage != null ? `${completenessPercentage}% complete · ` : ''}
+                {missingCompletenessGroups.length > 0
+                  ? `Focus next: ${missingCompletenessGroups.map((group) => `${group.label} (+${group.pointsAvailable}%)`).join(' · ')}`
+                  : 'Improve visibility with richer listing information'}
+              </span>
+            </span>
+            <ChevronDown className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${isAdditionalDetailsExpanded ? 'rotate-180' : ''}`} />
+          </button>
 
-        {isBuildingCategory && (
-          <BuildingDetailsSection register={register} control={control} errors={errors} />
-        )}
+          <div hidden={!isAdditionalDetailsExpanded} className="space-y-5 border-t border-slate-100 p-5 sm:p-6">
+            <FormSection title="More location details" icon={MapPin}>
+              <FormField label="Neighbourhood" error={errors.neighbourhoodId?.message}>
+                <select {...register('neighbourhoodId')} className={inputClass(!!errors.neighbourhoodId)} disabled={isLoadingNeighbourhoods}>
+                  <option value="">{isLoadingNeighbourhoods ? 'Loading neighbourhoods…' : 'Select neighbourhood (optional)'}</option>
+                  {neighbourhoodOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Estate name (optional)" error={errors.estateName?.message}>
+                <input {...register('estateName')} placeholder="e.g. Chevron Estate" className={inputClass(!!errors.estateName)} />
+              </FormField>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField label="State" error={errors.state?.message}>
+                  <input {...register('state')} placeholder="e.g. Lagos" className={inputClass(!!errors.state)} />
+                </FormField>
+                <FormField label="LGA" error={errors.lga?.message}>
+                  <input {...register('lga')} placeholder="e.g. Ikeja" className={inputClass(!!errors.lga)} />
+                </FormField>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField label="Latitude" error={errors.coordinates?.latitude?.message}>
+                  <input {...register('coordinates.latitude', { valueAsNumber: true })} type="number" step="any" placeholder="e.g. 6.5244" className={inputClass(!!errors.coordinates?.latitude)} />
+                </FormField>
+                <FormField label="Longitude" error={errors.coordinates?.longitude?.message}>
+                  <input {...register('coordinates.longitude', { valueAsNumber: true })} type="number" step="any" placeholder="e.g. 3.3792" className={inputClass(!!errors.coordinates?.longitude)} />
+                </FormField>
+              </div>
+              <FormField label="Nearby landmark" error={errors.nearbyLandmark?.message}>
+                <input {...register('nearbyLandmark')} placeholder="e.g. Opposite XYZ Mall" className={inputClass(!!errors.nearbyLandmark)} />
+              </FormField>
+            </FormSection>
 
-        {/* Features */}
-        <FormSection title="Amenities & features" icon={Sparkles}>
-          <Controller
-            control={control}
-            name="features"
-            render={({ field }) => (
-              <FeaturesCheckbox value={field.value} onChange={field.onChange} />
-            )}
-          />
-        </FormSection>
+            <FormSection title="Additional pricing" icon={Wallet}>
+              <FormField label="Service charge (₦, optional)" error={errors.serviceCharge?.message}>
+                <input {...register('serviceCharge', { valueAsNumber: true })} type="number" placeholder="e.g. 200000" className={inputClass(!!errors.serviceCharge)} />
+              </FormField>
+            </FormSection>
+
+            {isLandCategory && <LandDetailsSection register={register} control={control} errors={errors} />}
+            {isBuildingCategory && <BuildingDetailsSection register={register} control={control} errors={errors} />}
+
+            <FormSection title="Amenities & features" icon={Sparkles}>
+              <Controller
+                control={control}
+                name="features"
+                render={({ field }) => <FeaturesCheckbox value={field.value} onChange={field.onChange} />}
+              />
+            </FormSection>
+          </div>
+        </section>
 
         {/* Photos */}
         <FormSection title="Photos" icon={ImageIcon}>

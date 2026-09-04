@@ -19,7 +19,6 @@ const STATUS_VISUALS = {
 };
 
 const formatNaira = (n: number | string | null | undefined) => `₦${Number(n || 0).toLocaleString()}`;
-const capitalize = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 const timeAgo = (iso: string) => {
   const diff = Date.now() - new Date(iso).getTime();
   const hrs = Math.floor(diff / 3600000);
@@ -61,6 +60,7 @@ const ActionRow = ({ listing }: { listing: IListing }) => {
   const [rejectReason, setRejectReason] = useState('');
   const { mutate: approve, isPending: isApproving } = useApproveListing();
   const { mutate: reject, isPending: isRejecting } = useRejectListing();
+  const { mutate: feature, isPending: isFeaturing } = useFeatureListing();
 
   if (rejectMode) {
     const canConfirm = rejectReason.trim().length >= 10;
@@ -99,12 +99,13 @@ const ActionRow = ({ listing }: { listing: IListing }) => {
     );
   }
   if (listing.status === 'active') {
+    const featureBlocked = !listing.isFeatured && listing.canBeFeatured === false;
     return (
       <div className="flex gap-2">
         <button onClick={() => setRejectMode(true)} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-200 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50">
           <X className="h-3.5 w-3.5" /> Reject
         </button>
-        <button className="flex items-center justify-center rounded-lg border border-[#F59E0B]/30 px-3 py-2.5 text-[#F59E0B] hover:bg-[#F59E0B]/10">
+        <button onClick={() => feature({ id: listing._id, isFeatured: !listing.isFeatured })} disabled={isFeaturing || featureBlocked} title={featureBlocked ? `Complete listing to at least 70% before featuring. Focus on: ${listing.completenessBreakdown?.filter((group) => !group.earned).slice(0, 2).map((group) => `${group.label} (+${group.pointsAvailable}%)`).join(' and ') ?? 'listing details'}.` : listing.isFeatured ? 'Remove featured' : 'Mark as featured'} className="flex items-center justify-center rounded-lg border border-[#F59E0B]/30 px-3 py-2.5 text-[#F59E0B] hover:bg-[#F59E0B]/10 disabled:cursor-not-allowed disabled:opacity-50">
           <Star className={listing.isFeatured ? 'h-3.5 w-3.5 fill-[#F59E0B]' : 'h-3.5 w-3.5'} />
         </button>
       </div>
@@ -183,6 +184,15 @@ const ListingCard = ({ listing, isHighlighted = false }: { listing: IListing; is
           <PriceDisplay price={listing.price} pricePeriod={listing.pricePeriod} />
           {listing.serviceCharge ? <span className="text-[11px] text-slate-400">+{formatNaira(listing.serviceCharge)} SC</span> : null}
         </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-medium text-slate-500">Completeness</span>
+          <span className={`font-semibold ${(listing.completenessPercentage ?? 0) >= 70 ? 'text-[#0F766E]' : 'text-amber-600'}`}>{listing.completenessPercentage ?? 0}%</span>
+        </div>
+        {listing.completenessBreakdown?.some((group) => !group.earned) ? (
+          <p className="text-[11px] text-slate-400">
+            Focus next: {listing.completenessBreakdown.filter((group) => !group.earned).slice(0, 2).map((group) => `${group.label} (+${group.pointsAvailable}%)`).join(' · ')}
+          </p>
+        ) : null}
         <div className="flex items-center justify-between border-t border-slate-100 pt-3">
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0A1628]/5 text-[10px] font-semibold text-[#0A1628]">{listing.agentId ? 'A' : 'O'}</span>
@@ -229,6 +239,12 @@ const ListingRow = ({ listing, isHighlighted = false }: { listing: IListing; isH
             <h3 className="line-clamp-1 text-sm font-semibold text-[#0F172A]">{listing.title}</h3>
             <StatusPill status={listing.status} />
           </div>
+            <div className="mt-1 text-xs font-medium text-slate-500">Completeness: <span className={(listing.completenessPercentage ?? 0) >= 70 ? 'text-[#0F766E]' : 'text-amber-600'}>{listing.completenessPercentage ?? 0}%</span></div>
+          {listing.completenessBreakdown?.some((group) => !group.earned) ? (
+            <div className="mt-1 text-[11px] text-slate-400">
+              Focus next: {listing.completenessBreakdown.filter((group) => !group.earned).slice(0, 2).map((group) => `${group.label} (+${group.pointsAvailable}%)`).join(' · ')}
+            </div>
+          ) : null}
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
             <span className="flex items-center gap-1"><MapPin className="h-3 w-3 text-[#00C9A7]" />{listing.estateName ? `${listing.estateName}, ` : ''}{listing.areaName}</span>
             {summaryMeta.showBedBath ? (
@@ -254,7 +270,7 @@ const ListingRow = ({ listing, isHighlighted = false }: { listing: IListing; isH
             {listing.status === 'active' && (
               <>
                 <button className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"><X className="h-3.5 w-3.5" /><span className="hidden md:inline">Reject</span></button>
-                <button onClick={() => feature({ id: listing._id, isFeatured: !listing.isFeatured })} disabled={isFeaturing} className="inline-flex items-center justify-center rounded-lg border border-[#F59E0B]/30 p-2 text-[#F59E0B] hover:bg-[#F59E0B]/10 disabled:opacity-50 disabled:cursor-not-allowed"><Star className={listing.isFeatured ? 'h-3.5 w-3.5 fill-[#F59E0B]' : 'h-3.5 w-3.5'} /></button>
+                <button onClick={() => feature({ id: listing._id, isFeatured: !listing.isFeatured })} disabled={isFeaturing || (!listing.isFeatured && listing.canBeFeatured === false)} title={!listing.isFeatured && listing.canBeFeatured === false ? `Complete listing to at least 70% before featuring. Focus on: ${listing.completenessBreakdown?.filter((group) => !group.earned).slice(0, 2).map((group) => `${group.label} (+${group.pointsAvailable}%)`).join(' and ') ?? 'listing details'}.` : listing.isFeatured ? 'Remove featured' : 'Mark as featured'} className="inline-flex items-center justify-center rounded-lg border border-[#F59E0B]/30 p-2 text-[#F59E0B] hover:bg-[#F59E0B]/10 disabled:cursor-not-allowed disabled:opacity-50"><Star className={listing.isFeatured ? 'h-3.5 w-3.5 fill-[#F59E0B]' : 'h-3.5 w-3.5'} /></button>
               </>
             )}
             {listing.status === 'rejected' && (

@@ -24,6 +24,8 @@ export const ROUTES = {
   // Seeker
   DASHBOARD: "/dashboard",
   SAVED: "/saved",
+  PAYMENT_HISTORY: "/payment-history",
+  NOTIFICATIONS: "/notifications",
 
   // Agent
   AGENT_DASHBOARD: "/agent/dashboard",
@@ -35,6 +37,8 @@ export const ROUTES = {
   AGENT_KYC: "/agent/kyc",
   AGENT_PROFILE: "/agent/profile",
   AGENT_SETTINGS: "/agent/settings",
+  AGENT_HISTORY: "/agent/history",
+  AGENT_NOTIFICATIONS: "/agent/notifications",
 
   // Admin
   ADMIN_DASHBOARD: "/admin/dashboard",

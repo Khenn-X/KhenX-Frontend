@@ -10,7 +10,7 @@ import {
   ChevronLeft,
   // ChevronRight,
   Menu,
-  Bell,
+  History,
 } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
 import { useUIStore } from "../../store/ui.store";
@@ -18,6 +18,7 @@ import { useLogout } from "../../hooks/useAuth";
 import { ROUTES } from "../../constants/routes";
 import { cn, getInitials } from "../../lib/utils";
 import logo from "../../assets/kgreen.png";
+import NotificationBell from "../notifications/NotificationBell";
 
 const agentNavItems = [
   { label: "Dashboard", to: ROUTES.AGENT_DASHBOARD, icon: LayoutDashboard },
@@ -26,6 +27,7 @@ const agentNavItems = [
   { label: "KYC Verification", to: ROUTES.AGENT_KYC, icon: ShieldCheck },
   { label: "Profile", to: ROUTES.AGENT_PROFILE, icon: User },
   { label: "Settings", to: ROUTES.AGENT_SETTINGS, icon: Settings },
+  { label: "History", to: ROUTES.AGENT_HISTORY, icon: History },
 ];
 
 interface DashboardLayoutProps {
@@ -229,13 +231,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <button
-              className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-              aria-label="Notifications"
-            >
-              <Bell className="h-4.5 w-4.5" />
-              <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-[#00C9A7]" />
-            </button>
+            <NotificationBell />
 
             {user && (
               <div className="flex items-center gap-3">

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Search, MapPin, ArrowRight } from 'lucide-react';
+import { Heart, Search, MapPin, ArrowRight, Receipt } from 'lucide-react';
 import { useAuthStore } from '../../store/auth.store';
 import { useSavedListings } from '../../hooks/useSaved';
 import ListingCard from '../../components/listings/ListingCard';
@@ -48,7 +48,7 @@ const SeekerDashboardPage = () => {
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             icon: Search,
@@ -70,6 +70,13 @@ const SeekerDashboardPage = () => {
             description: 'Check power, flood risk, and security',
             to: ROUTES.NEIGHBOURHOOD,
             color: 'bg-blue-100 text-blue-500',
+          },
+          {
+            icon: Receipt,
+            label: 'Payment History',
+            description: 'Review your KhenX payments',
+            to: ROUTES.PAYMENT_HISTORY,
+            color: 'bg-amber-100 text-amber-600',
           },
         ].map(({ icon: Icon, label, description, to, color }) => (
           <Link

@@ -63,6 +63,10 @@ const SeekerDashboardPage = lazy(
 const SavedListingsPage = lazy(
   () => import("../pages/seeker/SavedListingsPage"),
 );
+const PaymentHistoryPage = lazy(
+  () => import("../pages/seeker/PaymentHistoryPage"),
+);
+const NotificationsPage = lazy(() => import("../pages/public/NotificationsPage"));
 
 // ── Agent (human property listers) ───────────────────────────────────────────
 const AgentDashboardPage = lazy(
@@ -81,6 +85,8 @@ const AgentEnquiriesPage = lazy(
 const KYCPage = lazy(() => import("../pages/agent/KYCPage"));
 const AgentProfilePage = lazy(() => import("../pages/agent/AgentProfilePage"));
 const AgentSettingsPage = lazy(() => import("../pages/agent/SettingsPage"));
+const AgentHistoryPage = lazy(() => import("../pages/agent/AgentHistoryPage"));
+const AgentNotificationsPage = lazy(() => import("../pages/public/NotificationsPage"));
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 const AdminDashboardPage = lazy(
@@ -362,6 +368,26 @@ const AppRouter = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/payment-history"
+          element={
+            <ProtectedRoute>
+              <PublicLayout>
+                <PaymentHistoryPage />
+              </PublicLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <PublicLayout>
+                <NotificationsPage />
+              </PublicLayout>
+            </ProtectedRoute>
+          }
+        />
 
         {/* ── AGENT (human property listers) ───────────────────────────── */}
         <Route
@@ -444,6 +470,26 @@ const AppRouter = () => {
             </AgentRoute>
           }
         />
+        <Route
+          path="/agent/history"
+          element={
+            <AgentRoute>
+              <DashboardLayout>
+                <AgentHistoryPage />
+              </DashboardLayout>
+            </AgentRoute>
+          }
+        />
+        <Route
+          path="/agent/notifications"
+          element={
+            <AgentRoute>
+              <DashboardLayout>
+                <AgentNotificationsPage />
+              </DashboardLayout>
+            </AgentRoute>
+          }
+        />
 
         {/* ── ADMIN ─────────────────────────────────────────────────────── */}
         <Route
@@ -452,6 +498,16 @@ const AppRouter = () => {
             <AdminRoute>
               <AdminLayout>
                 <AdminDashboardPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/notifications"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <NotificationsPage />
               </AdminLayout>
             </AdminRoute>
           }
