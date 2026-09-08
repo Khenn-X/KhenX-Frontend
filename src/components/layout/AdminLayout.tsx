@@ -14,6 +14,7 @@ import {
   Settings,
   User,
   DollarSign,
+  Headphones,
 } from "lucide-react";
 import { useAuthStore } from "../../store/auth.store";
 import { useUIStore } from "../../store/ui.store";
@@ -76,6 +77,12 @@ const adminNavGroups: NavGroup[] = [
         to: ROUTES.ADMIN_FRAUD,
         icon: AlertTriangle,
         badgeKey: "fraud.open",
+      },
+      {
+        label: "Support",
+        to: ROUTES.ADMIN_SUPPORT,
+        icon: Headphones,
+        badgeKey: null,
       },
       {
         label: "Payments",
@@ -165,6 +172,12 @@ const superadminNavGroups: NavGroup[] = [
         to: ROUTES.ADMIN_FRAUD,
         icon: AlertTriangle,
         badgeKey: "fraud.open",
+      },
+      {
+        label: "Support",
+        to: ROUTES.ADMIN_SUPPORT,
+        icon: Headphones,
+        badgeKey: null,
       },
       {
         label: "Payments",

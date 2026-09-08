@@ -47,6 +47,7 @@ export const ROUTES = {
   ADMIN_LISTINGS_HIGHLIGHT: (id: string) => `/admin/listings?highlight=${encodeURIComponent(id)}`,
   ADMIN_KYC: "/admin/kyc",
   ADMIN_FRAUD: "/admin/fraud",
+  ADMIN_SUPPORT: "/admin/support",
   ADMIN_AGENTS: "/admin/agents",
   ADMIN_NEIGHBOURHOODS: "/admin/neighbourhoods",
   ADMIN_NEIGHBOURHOOD_IMPORT: "/admin/neighbourhoods/import",

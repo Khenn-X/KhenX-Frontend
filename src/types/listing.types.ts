@@ -258,10 +258,6 @@ export interface CreateListingPayload {
   areaName: string;
   neighbourhoodId?: string | null;
   estateName?: string;
-  coordinates?: {
-    latitude?: number;
-    longitude?: number;
-  };
   lga?: string;
   state?: string;
   nearbyLandmark?: string;

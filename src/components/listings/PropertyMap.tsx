@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { MapContainer, TileLayer, Marker, Circle, Popup } from "react-leaflet";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { MapContainer, TileLayer, Marker, Circle, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -17,51 +18,121 @@ L.Icon.Default.mergeOptions({
 });
 
 interface PropertyMapProps {
-  areaName: string;
+  areaName?: string;
+  title?: string;
+  listingId?: string;
+  price?: number;
   latitude?: number;
   longitude?: number;
+  listings?: PropertyMapListing[];
   /** radius in meters representing the general neighbourhood, default 900m */
   radiusMeters?: number;
 }
 
-// Fallback centroid used only when a listing has no coordinates yet —
-// keeps the map from crashing, but the pin should be swapped in once
-// listings carry real lat/lng.
-const LAGOS_FALLBACK: [number, number] = [6.4531, 3.3958]; // Lagos Island
+export interface PropertyMapListing {
+  _id: string;
+  title?: string;
+  price?: number;
+  areaName?: string;
+  coordinates?: {
+    latitude?: number;
+    longitude?: number;
+  };
+}
 
-const PropertyMap = ({ areaName, latitude, longitude, radiusMeters = 900 }: PropertyMapProps) => {
-  const hasCoords = typeof latitude === "number" && typeof longitude === "number";
-  const center: [number, number] = hasCoords ? [latitude!, longitude!] : LAGOS_FALLBACK;
+const isValidCoordinate = (latitude?: number, longitude?: number): latitude is number =>
+  typeof latitude === "number" &&
+  typeof longitude === "number" &&
+  Number.isFinite(latitude) &&
+  Number.isFinite(longitude) &&
+  latitude >= -90 &&
+  latitude <= 90 &&
+  longitude >= -180 &&
+  longitude <= 180 &&
+  !(latitude === 0 && longitude === 0);
 
-  // On touch devices, a one-finger drag on the map would otherwise hijack the
-  // page's scroll gesture. Require a tap to "activate" the map first — the
-  // overlay below only renders/intercepts touches on coarse-pointer devices
-  // (see CSS), so desktop/mouse users are unaffected.
+const formatPrice = (price?: number) =>
+  typeof price === "number"
+    ? new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(price)
+    : "Price unavailable";
+
+const FitMapToMarkers = ({ positions }: { positions: Array<[number, number]> }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (positions.length === 0) return;
+    if (positions.length === 1) {
+      map.setView(positions[0], 15);
+      return;
+    }
+    map.fitBounds(positions, { padding: [32, 32], maxZoom: 15 });
+  }, [map, positions]);
+
+  return null;
+};
+
+const PropertyMap = ({ areaName, title, listingId, price, latitude, longitude, listings, radiusMeters = 900 }: PropertyMapProps) => {
+  const mapListings = useMemo<PropertyMapListing[]>(
+    () => listings ?? [{ _id: listingId ?? "single-listing", title, price, areaName, coordinates: { latitude, longitude } }],
+    [areaName, latitude, listingId, listings, longitude, price, title],
+  );
+  const mappedListings = mapListings.filter((listing) =>
+    isValidCoordinate(listing.coordinates?.latitude, listing.coordinates?.longitude)
+  );
+  const positions = mappedListings.map((listing) => [
+    listing.coordinates!.latitude!,
+    listing.coordinates!.longitude!,
+  ] as [number, number]);
+  const center = positions[0];
+  const isMultiMarkerMode = Array.isArray(listings);
+
   const [mapActive, setMapActive] = useState(false);
 
   return (
     <div className="khenx-map-wrap" style={{ borderRadius: 18, overflow: "hidden", border: "1px solid #E2E8F0", position: "relative" }}>
-      <MapContainer
-        center={center}
-        zoom={hasCoords ? 15 : 12}
-        scrollWheelZoom={false}
-        style={{ height: 280, width: "100%" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        <Circle
+      {mappedListings.length === 0 ? (
+        <div className="flex h-[280px] items-center justify-center bg-slate-50 px-6 text-center text-sm text-slate-500">
+          {isMultiMarkerMode ? 'No properties with mapped coordinates yet.' : 'Exact location not available for this property yet.'}
+        </div>
+      ) : (
+        <MapContainer
           center={center}
-          radius={radiusMeters}
-          pathOptions={{ color: "#00C9A7", fillColor: "#00C9A7", fillOpacity: 0.08, weight: 1.5 }}
-        />
-        <Marker position={center}>
-          <Popup>{areaName}, Lagos</Popup>
-        </Marker>
-      </MapContainer>
+          zoom={15}
+          scrollWheelZoom={false}
+          style={{ height: 280, width: "100%" }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <FitMapToMarkers positions={positions} />
+          {mappedListings.map((listing, index) => {
+            const position = positions[index];
+            return (
+              <Marker key={listing._id} position={position}>
+                <Popup>
+                  <div className="space-y-1">
+                    <p className="font-semibold text-slate-900">{listing.title || listing.areaName || "Property"}</p>
+                    <p className="text-sm text-slate-600">{formatPrice(listing.price)}</p>
+                    <Link className="text-sm font-semibold text-[#008F7A] hover:underline" to={`/listings/${listing._id}`}>
+                      View property
+                    </Link>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+          {mappedListings.length === 1 && !listings && (
+            <Circle
+              center={center}
+              radius={radiusMeters}
+              pathOptions={{ color: "#00C9A7", fillColor: "#00C9A7", fillOpacity: 0.08, weight: 1.5 }}
+            />
+          )}
+        </MapContainer>
+      )}
 
-      {!mapActive && (
+      {mappedListings.length > 0 && !mapActive && (
         <div
           className="khenx-map-tap-overlay"
           role="button"
@@ -92,26 +163,6 @@ const PropertyMap = ({ areaName, latitude, longitude, radiusMeters = 900 }: Prop
           >
             Tap to interact with map
           </span>
-        </div>
-      )}
-
-      {!hasCoords && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 10,
-            left: 10,
-            right: 10,
-            background: "rgba(15,23,42,0.85)",
-            color: "#F1F5F9",
-            fontSize: 11,
-            borderRadius: 8,
-            padding: "6px 10px",
-            backdropFilter: "blur(4px)",
-            zIndex: 6,
-          }}
-        >
-          Showing approximate area — exact coordinates not yet set for this listing.
         </div>
       )}
 

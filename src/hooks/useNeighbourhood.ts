@@ -18,14 +18,24 @@ export const neighbourhoodKeys = {
 };
 
 // ─── Single area — NeighbourhoodPage + listing detail ────────────────────────
-export const useNeighbourhood = (area: string) =>
-  useQuery({
+type QueryErrorWithResponse = { response?: { status?: number } };
+
+export const useNeighbourhood = (area: string) => {
+  const query = useQuery({
     queryKey: neighbourhoodKeys.area(area),
     queryFn:  () => neighbourhoodApi.getAreaIntelligence(area),
     enabled:  !!area,
     staleTime: 1000 * 60 * 10,
-    retry: false,
+    retry: (failureCount, error) => (error as QueryErrorWithResponse)?.response?.status !== 404 && failureCount < 2,
   });
+  const isNotFound = query.isError && (query.error as QueryErrorWithResponse)?.response?.status === 404;
+
+  return {
+    ...query,
+    isNotFound,
+    isError: query.isError && !isNotFound,
+  };
+};
 
 // ─── All areas (non-paginated) — Intelligence Hub ────────────────────────────
 export const useAllAreas = () =>

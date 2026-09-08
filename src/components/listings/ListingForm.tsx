@@ -181,7 +181,6 @@ const ListingForm = ({
       state?: string;
       lga?: string;
       nearbyLandmark?: string;
-      coordinates?: { latitude?: number; longitude?: number };
       buildingDetails?: Record<string, unknown>;
       landDetails?: Record<string, unknown>;
     };
@@ -191,8 +190,7 @@ const ListingForm = ({
       return value !== undefined && value !== null && value !== '' && value !== false;
     };
     const hasLocationDetails = Boolean(
-      values.neighbourhoodId || values.estateName || values.state || values.lga || values.nearbyLandmark ||
-      values.coordinates?.latitude != null || values.coordinates?.longitude != null
+      values.neighbourhoodId || values.estateName || values.state || values.lga || values.nearbyLandmark
     );
     const hasAmenities = Object.values(values.features ?? {}).some(Boolean) ||
       Object.values(values.nearbyPlaces ?? {}).some((entries) => Array.isArray(entries) && entries.length > 0) ||
@@ -533,6 +531,14 @@ const ListingForm = ({
                 ))}
               </select>
             </FormField>
+            <FormField label="Neighbourhood (helps show your property on the map)" error={errors.neighbourhoodId?.message}>
+              <select {...register('neighbourhoodId')} className={inputClass(!!errors.neighbourhoodId)} disabled={isLoadingNeighbourhoods}>
+                <option value="">{isLoadingNeighbourhoods ? 'Loading neighbourhoods...' : 'Select neighbourhood (optional)'}</option>
+                {neighbourhoodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </FormField>
           </div>
 
         </FormSection>
@@ -614,14 +620,6 @@ const ListingForm = ({
 
           <div hidden={!isAdditionalDetailsExpanded} className="space-y-5 border-t border-slate-100 p-5 sm:p-6">
             <FormSection title="More location details" icon={MapPin}>
-              <FormField label="Neighbourhood" error={errors.neighbourhoodId?.message}>
-                <select {...register('neighbourhoodId')} className={inputClass(!!errors.neighbourhoodId)} disabled={isLoadingNeighbourhoods}>
-                  <option value="">{isLoadingNeighbourhoods ? 'Loading neighbourhoods…' : 'Select neighbourhood (optional)'}</option>
-                  {neighbourhoodOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </FormField>
               <FormField label="Estate name (optional)" error={errors.estateName?.message}>
                 <input {...register('estateName')} placeholder="e.g. Chevron Estate" className={inputClass(!!errors.estateName)} />
               </FormField>
@@ -631,14 +629,6 @@ const ListingForm = ({
                 </FormField>
                 <FormField label="LGA" error={errors.lga?.message}>
                   <input {...register('lga')} placeholder="e.g. Ikeja" className={inputClass(!!errors.lga)} />
-                </FormField>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField label="Latitude" error={errors.coordinates?.latitude?.message}>
-                  <input {...register('coordinates.latitude', { valueAsNumber: true })} type="number" step="any" placeholder="e.g. 6.5244" className={inputClass(!!errors.coordinates?.latitude)} />
-                </FormField>
-                <FormField label="Longitude" error={errors.coordinates?.longitude?.message}>
-                  <input {...register('coordinates.longitude', { valueAsNumber: true })} type="number" step="any" placeholder="e.g. 3.3792" className={inputClass(!!errors.coordinates?.longitude)} />
                 </FormField>
               </div>
               <FormField label="Nearby landmark" error={errors.nearbyLandmark?.message}>

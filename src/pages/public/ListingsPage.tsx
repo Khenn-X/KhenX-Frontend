@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Grid3x3, List, ChevronDown } from 'lucide-react';
+import { Grid3x3, List, Map as MapIcon, ChevronDown } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useListings } from '../../hooks/useListings';
 import { useFeaturedNeighbourhoods } from '../../hooks/useNeighbourhood';
@@ -10,6 +10,7 @@ import ListingFilters, { type ExtendedListingFilters } from '../../components/li
 import ListingCategoryNav from '../../components/listings/ListingCategoryNav';
 import ListingsStatsBar from '../../components/listings/ListingsStatsBar';
 import ListingGrid from '../../components/listings/ListingGrid';
+import PropertyMap from '../../components/listings/PropertyMap';
 import Pagination from '../../components/shared/Pagination';
 import PageWrapper from '../../components/layout/PageWrapper';
 import AgentGrid from "../../components/home/AgentGrid";
@@ -25,7 +26,7 @@ const ListingsPage = () => {
   const [filters, setFilters] = useState<ExtendedListingFilters>({});
   const [activeTab, setActiveTab] = useState('');
   const [activeQuickFilter, setActiveQuickFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
   const { hasSearched } = useSearchStore();
 
   // Initialize filters from URL query parameters when component mounts
@@ -160,18 +161,29 @@ const ListingsPage = () => {
                       >
                         <List className="h-3.5 w-3.5" />
                       </button>
+                      <button
+                        onClick={() => setViewMode('map')}
+                        className={`flex h-8 w-8 items-center justify-center ${viewMode === 'map' ? 'bg-[#0A1628] text-white' : 'bg-white text-slate-400'}`}
+                        aria-label="Map view"
+                      >
+                        <MapIcon className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                <ListingGrid
-                  listings={listings}
-                  isLoading={isLoading}
-                  emptyTitle="No properties found"
-                  emptyDescription="Try adjusting your filters or search in a different area."
-                  viewMode={viewMode}
-                  intelligenceByArea={intelligenceByArea}
-                />
+                {viewMode === 'map' ? (
+                  <PropertyMap listings={listings} />
+                ) : (
+                  <ListingGrid
+                    listings={listings}
+                    isLoading={isLoading}
+                    emptyTitle="No properties found"
+                    emptyDescription="Try adjusting your filters or search in a different area."
+                    viewMode={viewMode}
+                    intelligenceByArea={intelligenceByArea}
+                  />
+                )}
 
                 {meta && meta.totalPages > 1 && (
                   <Pagination

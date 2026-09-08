@@ -4,6 +4,7 @@ import AppRouter from './routes/AppRouter';
 import { useMe } from './hooks/useAuth';
 import CustomCursor from './components/shared/CustomCursor';
 import ScrollToTop from './components/shared/ScrollToTop';
+import SupportChatWidget from './components/support/SupportChatWidget';
 
 /**
  * Bootstraps the authenticated user into Zustand on app load.
@@ -70,6 +71,8 @@ const App = () => {
           },
         }}
       />
+
+      <SupportChatWidget />
     </>
   );
 };

@@ -384,8 +384,12 @@ const NeighbourhoodDataForm = ({ areas, selectedAreaName, onSelectArea, onSaved 
     control,
     name: 'canonicalName',
   });
+  const watchedDisplayName = useWatch({ control, name: 'displayName' });
+  const watchedState = useWatch({ control, name: 'state' });
+  const watchedLga = useWatch({ control, name: 'lga' });
 
   const [localImagePreviews, setLocalImagePreviews] = useState<Record<ImageFieldName, string>>({} as Record<ImageFieldName, string>);
+  const [isResolvingCoordinates, setIsResolvingCoordinates] = useState(false);
 
   const getImageUrl = (fieldName: ImageFieldName) => imageValues[imageFieldNames.indexOf(fieldName)] ?? '';
 
@@ -683,6 +687,38 @@ const NeighbourhoodDataForm = ({ areas, selectedAreaName, onSelectArea, onSaved 
     setValue(fieldName, '', { shouldValidate: true });
   };
 
+  const resolveCoordinates = async () => {
+    if (!selectedAreaId) {
+      toast.error('Select an existing neighbourhood before resolving coordinates.');
+      return;
+    }
+
+    setIsResolvingCoordinates(true);
+    try {
+      const response = await neighbourhoodApi.resolveCoordinates(selectedAreaId, {
+        canonicalName: watchedAreaName,
+        displayName: watchedDisplayName,
+        state: watchedState,
+        lga: watchedLga,
+      });
+      const coordinates = response.data?.coordinates;
+      if (!coordinates) {
+        toast.error('No coordinates were returned. Enter latitude and longitude manually.');
+        return;
+      }
+
+      setValue('location.coordinates', [coordinates.longitude, coordinates.latitude], {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      toast.success(`Resolved ${coordinates.latitude.toFixed(5)}, ${coordinates.longitude.toFixed(5)}. Review and save the form.`);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'No coordinates found. Enter latitude and longitude manually.');
+    } finally {
+      setIsResolvingCoordinates(false);
+    }
+  };
+
   const selectAreaLocal = (areaName: string) => {
     setSelectedAreaId(areaName);
     const area = areas.find((item) => item.areaName === areaName);
@@ -760,7 +796,16 @@ const NeighbourhoodDataForm = ({ areas, selectedAreaName, onSelectArea, onSaved 
           <h2 className="text-xl font-semibold text-[#0F172A]">Create or edit a neighbourhood</h2>
           <p className="mt-1 text-sm text-slate-500">Fill the full schema-backed neighbourhood profile and save it to the backend.</p>
         </div>
+        <button
+          type="button"
+          onClick={() => void resolveCoordinates()}
+          disabled={!selectedAreaId || isResolvingCoordinates}
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-[#00C9A7] px-4 py-2 text-sm font-semibold text-[#008F7A] transition-colors hover:bg-[#00C9A7]/10 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isResolvingCoordinates ? 'Resolving...' : 'Resolve coordinates'}
+        </button>
       </div>
+      <p className="-mt-3 mb-5 text-xs text-slate-500">Uses the neighbourhood name, LGA, and state. You can still enter coordinates manually below.</p>
 
       <form className="space-y-5" onSubmit={handleSubmit(onSubmit, onSubmitInvalid)} noValidate>
         <div>

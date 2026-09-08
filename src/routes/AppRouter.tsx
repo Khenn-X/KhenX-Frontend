@@ -100,6 +100,7 @@ const AdminListingsPage = lazy(
 );
 const AdminKYCPage = lazy(() => import("../pages/admin/AdminKYCPage"));
 const AdminFraudPage = lazy(() => import("../pages/admin/AdminFraudPage"));
+const AdminSupportPage = lazy(() => import("../pages/admin/AdminSupportPage"));
 const AdminAgentsPage = lazy(() => import("../pages/admin/AdminAgentsPage"));
 const AdminNeighbourhoodsPage = lazy(() => import("../pages/admin/AdminNeighbourhoodsPage"));
 const AdminNeighbourhoodNewPage = lazy(() => import("../pages/admin/AdminNeighbourhoodNewPage"));
@@ -548,6 +549,16 @@ const AppRouter = () => {
             <AdminRoute>
               <AdminLayout>
                 <AdminFraudPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/support"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <AdminSupportPage />
               </AdminLayout>
             </AdminRoute>
           }

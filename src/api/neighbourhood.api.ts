@@ -73,6 +73,15 @@ export const neighbourhoodApi = {
     return data;
   },
 
+  // Admin: resolve and persist area coordinates through the server-side geocoder
+  resolveCoordinates: async (
+    areaName: string,
+    payload: { canonicalName?: string; displayName?: string; state?: string; lga?: string },
+  ): Promise<ApiResponse<{ coordinates: { latitude: number; longitude: number }; query: string }>> => {
+    const { data } = await api.post(`/neighbourhood/${encodeURIComponent(areaName)}/resolve-coordinates`, payload);
+    return data;
+  },
+
   // Admin: delete a neighbourhood
   deleteNeighbourhood: async (areaName: string): Promise<ApiResponse> => {
     const { data } = await api.delete(`/neighbourhood/${encodeURIComponent(areaName)}`);

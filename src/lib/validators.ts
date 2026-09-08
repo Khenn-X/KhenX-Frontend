@@ -93,16 +93,6 @@ export const baseListingSchema = z.object({
   areaName: z.string().min(2, 'Area name is required'),
   neighbourhoodId: z.string().nullable().optional(),
   estateName: z.string().optional(),
-  coordinates: z
-    .object({
-      latitude: optionalCoercedNumber(-90, 'Latitude must be >= -90').refine((value) => value === undefined || value <= 90, {
-        message: 'Latitude must be <= 90',
-      }),
-      longitude: optionalCoercedNumber(-180, 'Longitude must be >= -180').refine((value) => value === undefined || value <= 180, {
-        message: 'Longitude must be <= 180',
-      }),
-    })
-    .optional(),
   lga: z.string().optional(),
   state: z.string().optional(),
   nearbyLandmark: z.string().optional(),
