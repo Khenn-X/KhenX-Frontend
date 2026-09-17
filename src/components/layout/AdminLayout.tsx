@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Building2,
   ShieldCheck,
+  FileCheck2,
   AlertTriangle,
   Users,
   LogOut,
@@ -71,6 +72,12 @@ const adminNavGroups: NavGroup[] = [
         to: ROUTES.ADMIN_KYC,
         icon: ShieldCheck,
         badgeKey: "agents.pendingKYC",
+      },
+      {
+        label: "Evidence Review",
+        to: ROUTES.ADMIN_EVIDENCE,
+        icon: FileCheck2,
+        badgeKey: null,
       },
       {
         label: "Fraud Reports",
@@ -166,6 +173,12 @@ const superadminNavGroups: NavGroup[] = [
         to: ROUTES.ADMIN_KYC,
         icon: ShieldCheck,
         badgeKey: "agents.pendingKYC",
+      },
+      {
+        label: "Evidence Review",
+        to: ROUTES.ADMIN_EVIDENCE,
+        icon: FileCheck2,
+        badgeKey: null,
       },
       {
         label: "Fraud Reports",

@@ -82,6 +82,9 @@ const EditListingPage = lazy(() => import("../pages/agent/EditListingPage"));
 const AgentEnquiriesPage = lazy(
   () => import("../pages/agent/AgentEnquiriesPage"),
 );
+const AgentEvidencePage = lazy(
+  () => import("../pages/agent/AgentEvidencePage"),
+);
 const KYCPage = lazy(() => import("../pages/agent/KYCPage"));
 const AgentProfilePage = lazy(() => import("../pages/agent/AgentProfilePage"));
 const AgentSettingsPage = lazy(() => import("../pages/agent/SettingsPage"));
@@ -99,6 +102,7 @@ const AdminListingsPage = lazy(
   () => import("../pages/admin/AdminListingsPage"),
 );
 const AdminKYCPage = lazy(() => import("../pages/admin/AdminKYCPage"));
+const AdminEvidencePage = lazy(() => import("../pages/admin/AdminEvidencePage"));
 const AdminFraudPage = lazy(() => import("../pages/admin/AdminFraudPage"));
 const AdminSupportPage = lazy(() => import("../pages/admin/AdminSupportPage"));
 const AdminAgentsPage = lazy(() => import("../pages/admin/AdminAgentsPage"));
@@ -442,6 +446,16 @@ const AppRouter = () => {
           }
         />
         <Route
+          path="/agent/evidence"
+          element={
+            <AgentRoute>
+              <DashboardLayout>
+                <AgentEvidencePage />
+              </DashboardLayout>
+            </AgentRoute>
+          }
+        />
+        <Route
           path="/agent/kyc"
           element={
             <AgentRoute>
@@ -539,6 +553,16 @@ const AppRouter = () => {
             <AdminRoute>
               <AdminLayout>
                 <AdminKYCPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/evidence"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <AdminEvidencePage />
               </AdminLayout>
             </AdminRoute>
           }

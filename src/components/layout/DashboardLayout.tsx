@@ -24,6 +24,7 @@ const agentNavItems = [
   { label: "Dashboard", to: ROUTES.AGENT_DASHBOARD, icon: LayoutDashboard },
   { label: "My Listings", to: ROUTES.AGENT_LISTINGS, icon: Building2 },
   { label: "Enquiries", to: ROUTES.AGENT_ENQUIRIES, icon: MessageSquare },
+  { label: "Evidence", to: ROUTES.AGENT_EVIDENCE, icon: ShieldCheck },
   { label: "KYC Verification", to: ROUTES.AGENT_KYC, icon: ShieldCheck },
   { label: "Profile", to: ROUTES.AGENT_PROFILE, icon: User },
   { label: "Settings", to: ROUTES.AGENT_SETTINGS, icon: Settings },

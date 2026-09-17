@@ -87,4 +87,14 @@ export const neighbourhoodApi = {
     const { data } = await api.delete(`/neighbourhood/${encodeURIComponent(areaName)}`);
     return data;
   },
+
+  runOsmAmenities: async (neighbourhoodId: string): Promise<ApiResponse<{ evidenceCreated: number }>> => {
+    const { data } = await api.post(`/admin/adapters/osm-amenities/run/${neighbourhoodId}`);
+    return data;
+  },
+
+  runOsrmTravelTimes: async (neighbourhoodId: string): Promise<ApiResponse<{ evidenceCreated: number }>> => {
+    const { data } = await api.post(`/admin/adapters/osrm-travel-times/run/${neighbourhoodId}`);
+    return data;
+  },
 };

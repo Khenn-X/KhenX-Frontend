@@ -1,9 +1,13 @@
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorMessage from '../../components/shared/ErrorMessage';
 import { useAllAreas } from '../../hooks/useNeighbourhood';
 import { ROUTES } from '../../constants/routes';
+import { neighbourhoodApi } from '../../api/neighbourhood.api';
 
 const getScoreBadgeClasses = (score?: number | null) => {
   if (score == null) return 'bg-slate-100 text-slate-500';
@@ -48,20 +52,43 @@ const renderFloodField = (label: string, value: string | null | undefined) => (
   </div>
 );
 
-const renderObjectFields = (title: string, objectValue: Record<string, unknown> | undefined) => {
-  if (!objectValue) return null;
+const humanizeKey = (key: string) => key
+  .replace(/([a-z])([A-Z])/g, '$1 $2')
+  .replace(/_/g, ' ')
+  .replace(/^./, (character) => character.toUpperCase());
+
+const renderObjectValue = (value: unknown): ReactNode => {
+  if (value === null || value === undefined || value === '') return '—';
+  if (value instanceof Date) return value.toLocaleString();
+  if (Array.isArray(value)) {
+    return value.length ? value.map((item) => renderObjectValue(item)).join(', ') : '—';
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    return entries.length
+      ? entries.map(([key, item]) => `${humanizeKey(key)}: ${renderObjectValue(item)}`).join(' | ')
+      : '—';
+  }
+  return String(value);
+};
+
+const renderObjectFields = (title: string, objectValue: unknown) => {
+  const entries = objectValue && typeof objectValue === 'object'
+    ? Object.entries(objectValue as Record<string, unknown>)
+    : [];
   return (
     <div className="space-y-3">
       <h3 className="text-base font-semibold text-[#0F172A]">{title}</h3>
       <div className="grid gap-3 sm:grid-cols-2">
-        {Object.entries(objectValue).map(([key, value]) => (
+        {entries.map(([key, value]) => (
           <div key={key} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:border-slate-300">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{key}</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{humanizeKey(key)}</span>
             <div className="mt-1 text-sm font-medium text-[#0F172A]">
-              {value === null || value === undefined || value === '' ? '—' : String(value)}
+              {renderObjectValue(value)}
             </div>
           </div>
         ))}
+        {!entries.length && <div className="text-sm text-slate-400">—</div>}
       </div>
     </div>
   );
@@ -99,6 +126,17 @@ const AdminNeighbourhoodViewPage = () => {
     () => areas.find((area) => area.areaName === areaName),
     [areas, areaName],
   );
+  const canonical = neighbourhood as (typeof neighbourhood & Record<string, unknown>) | undefined;
+  const osmMutation = useMutation({
+    mutationFn: (id: string) => neighbourhoodApi.runOsmAmenities(id),
+    onSuccess: (response) => toast.success(`${response.data?.evidenceCreated ?? 0} evidence records sent for review.`),
+    onError: (error: Error) => toast.error(error.message || 'OSM amenity lookup failed.'),
+  });
+  const osrmMutation = useMutation({
+    mutationFn: (id: string) => neighbourhoodApi.runOsrmTravelTimes(id),
+    onSuccess: (response) => toast.success(`${response.data?.evidenceCreated ?? 0} free-flow travel-time records sent for review.`),
+    onError: (error: Error) => toast.error(error.message || 'OSRM travel-time lookup failed.'),
+  });
 
   return (
     <div className="space-y-6">
@@ -136,6 +174,26 @@ const AdminNeighbourhoodViewPage = () => {
               Edit this neighbourhood
             </button>
           )}
+          {neighbourhood?._id && (
+            <button
+              type="button"
+              disabled={osmMutation.isPending}
+              onClick={() => osmMutation.mutate(neighbourhood._id)}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#00C9A7]/40 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/20 disabled:cursor-wait disabled:opacity-60"
+            >
+              {osmMutation.isPending ? 'Checking OSM...' : 'Run OSM amenity check'}
+            </button>
+          )}
+          {neighbourhood?._id && (
+            <button
+              type="button"
+              disabled={osrmMutation.isPending}
+              onClick={() => osrmMutation.mutate(neighbourhood._id)}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-amber-300/50 bg-amber-400/10 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-400/20 disabled:cursor-wait disabled:opacity-60"
+            >
+              {osrmMutation.isPending ? 'Checking OSRM...' : 'Run OSRM travel-time check'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -171,6 +229,7 @@ const AdminNeighbourhoodViewPage = () => {
                     {renderScoreField('Security score', neighbourhood.securityScore)}
                     {renderField('Properties count', neighbourhood.propertiesCount)}
                     {renderField('Bank count', neighbourhood.bankCount)}
+                    {renderField('Market count', neighbourhood.marketCount)}
                   </div>
                 </div>
 
@@ -191,20 +250,50 @@ const AdminNeighbourhoodViewPage = () => {
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60">
                 <h3 className="text-base font-semibold text-[#0F172A]">Details</h3>
                 <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                  {renderField('Description', neighbourhood.description)}
-                  {renderField('Data confidence', neighbourhood.dataConfidence)}
-                  {renderField('Data sources', neighbourhood.dataSources?.join(', '))}
-                  {renderField('Total reports used', neighbourhood.totalReportsUsed)}
+                  {renderField('Canonical name', canonical?.canonicalName as string | null | undefined)}
+                  {renderField('Slug', canonical?.slug as string | null | undefined)}
+                  {renderField('LGA', canonical?.lga as string | null | undefined)}
+                  {renderField('State', canonical?.state as string | null | undefined)}
+                  {renderField('Country', canonical?.country as string | null | undefined)}
+                  {renderField('Active', canonical?.isActive as boolean | null | undefined)}
+                  {renderField('Featured', canonical?.isFeatured as boolean | null | undefined)}
+                  {renderField('Created at', canonical?.createdAt as string | null | undefined)}
+                  {renderField('Updated at', canonical?.updatedAt as string | null | undefined)}
+                  {renderField('Description', canonical?.description as string | null | undefined)}
                 </div>
               </div>
 
-              {/* Object groups */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60 space-y-6">
-                {renderObjectFields('Amenities', neighbourhood.amenities as Record<string, unknown>)}
-                {renderObjectFields('School counts', neighbourhood.schoolCounts as Record<string, unknown>)}
-                {renderObjectFields('Typical rent range', neighbourhood.typicalRentRange as Record<string, unknown>)}
-                {renderObjectFields('Travel times to hubs', neighbourhood.travelTimesToHubs as Record<string, unknown>)}
+              {/* Canonical schema groups */}
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/60 space-y-8">
+                {renderObjectFields('Data quality and summary', canonical?.summary)}
+                {renderObjectFields('Infrastructure', canonical?.infrastructure)}
+                {renderObjectFields('Safety', canonical?.safety)}
+                {renderObjectFields('Flooding', canonical?.flooding)}
+                {renderObjectFields('Transport', canonical?.transport)}
+                <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+                  <h3 className="text-base font-semibold text-[#0F172A]">Free-flow estimates (no traffic)</h3>
+                  <p className="text-xs text-slate-500">OSRM driving durations are separate from the trusted manual travel times.</p>
+                  {renderObjectFields('OSRM travel times', canonical?.transport && (canonical.transport as Record<string, unknown>).freeFlowTravelTimesToHubs)}
+                </div>
+                {renderObjectFields('Environment', canonical?.environment)}
+                {renderObjectFields('Connectivity', canonical?.connectivity)}
+                {renderObjectFields('Amenities and schools', canonical?.amenities)}
+                {renderObjectFields('Property market', canonical?.propertyMarket)}
+                {renderObjectFields('Community', canonical?.community)}
+                {renderObjectFields('Rent: effective', canonical?.rent && (canonical.rent as Record<string, unknown>).effective)}
+                {renderObjectFields('Rent: live', canonical?.rent && (canonical.rent as Record<string, unknown>).live)}
+                {renderObjectFields('Rent: override', canonical?.rent && (canonical.rent as Record<string, unknown>).override)}
+                {renderObjectFields('Location', canonical?.location)}
+                {renderObjectFields('Assets', canonical?.assets)}
+                {renderObjectFields('Legacy migration metadata', canonical?.legacy)}
               </div>
+              <p className="text-sm text-slate-500">
+                OSM results are pending evidence. Review them in the{' '}
+                <button type="button" className="font-semibold text-teal-700 underline" onClick={() => navigate(ROUTES.ADMIN_EVIDENCE)}>
+                  evidence queue
+                </button>{' '}
+                before they affect live intelligence.
+              </p>
             </div>
           )}
         </>

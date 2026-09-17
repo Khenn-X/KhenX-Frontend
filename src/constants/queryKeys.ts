@@ -53,6 +53,13 @@ export const queryKeys = {
     all: ['kyc', 'all'] as const,
   },
 
+  evidence: {
+    pending: ['evidence', 'pending'] as const,
+    summary: ['evidence', 'summary'] as const,
+    neighbourhood: (neighbourhoodId: string, page: number, limit: number) =>
+      ['evidence', 'neighbourhood', neighbourhoodId, page, limit] as const,
+  },
+
   agents: {
     profile: (id: string) => ['agents', 'profile', id] as const,
   },
