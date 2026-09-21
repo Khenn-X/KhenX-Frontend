@@ -491,6 +491,35 @@ const MobileSection = ({
   );
 };
 
+const MobilePreferencesSection = ({ onClose }: { onClose: () => void }) => {
+  return (
+    <div className="border-b border-slate-100">
+      <div className="px-4 py-3.5">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+          Preferences
+        </span>
+      </div>
+
+      <div className="bg-slate-50/60 pb-2">
+        <Link
+          to="#"
+          onClick={onClose}
+          className="block px-5 py-2.5 text-sm text-slate-600 transition-colors hover:bg-white hover:text-[#0A1628]"
+        >
+          Help and FAQs
+        </Link>
+        <Link
+          to="#"
+          onClick={onClose}
+          className="block px-5 py-2.5 text-sm text-slate-600 transition-colors hover:bg-white hover:text-[#0A1628]"
+        >
+          Contact us
+        </Link>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Navbar ──────────────────────────────────────────────────────────────
 
 const Navbar = () => {
@@ -864,6 +893,8 @@ const Navbar = () => {
               onClose={closeAll}
             />
           ))}
+
+          <MobilePreferencesSection onClose={closeAll} />
 
           {/* Bottom actions */}
           <div className="px-4 py-4 border-t border-slate-100 flex flex-col gap-2">

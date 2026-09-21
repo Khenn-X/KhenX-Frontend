@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+:root {
+  --khenx-brand-teal-dark: #006A61;
+}
+
 /* ── Global font ─────────────────────────────────────────────────────────────── */
 html {
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;

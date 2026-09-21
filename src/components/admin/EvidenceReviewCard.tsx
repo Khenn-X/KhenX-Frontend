@@ -4,6 +4,13 @@ import toast from 'react-hot-toast';
 import { evidenceApi, type EvidenceSource, type PendingEvidence } from '../../api/evidence.api';
 import { classifyEvidenceTier } from '../../lib/evidence-tier';
 import { useApproveEvidence, useRejectEvidence } from '../../hooks/useEvidence';
+import { useAuthStore } from '../../store/auth.store';
+import {
+  buildSourceDetailsSummary,
+  getHumanReadableSourceLink,
+  getSourceMethodLabel,
+  formatStructuredPlace,
+} from '../../lib/source-details-summary';
 
 interface EvidenceReviewCardProps {
   evidence: PendingEvidence;
@@ -40,7 +47,7 @@ const formatSourceBody = (body: string) => {
 
 const LIST_CLAIM_TYPES = new Set(['school_nearest_list', 'bank_nearest_list', 'market_nearest_list']);
 
-const getNearbyPlaces = (value: unknown): Array<{ name: string; distanceKm: number; brand?: string }> | null => {
+const getNearbyPlaces = (value: unknown): Array<{ name: string; distanceKm: number; street?: string; fullAddress?: string; brand?: string }> | null => {
   let parsed = value;
   if (typeof parsed === 'string') {
     try {
@@ -50,7 +57,7 @@ const getNearbyPlaces = (value: unknown): Array<{ name: string; distanceKm: numb
     }
   }
   if (!Array.isArray(parsed)) return null;
-  return parsed.filter((place): place is { name: string; distanceKm: number; brand?: string } => (
+  return parsed.filter((place): place is { name: string; distanceKm: number; street?: string; fullAddress?: string; brand?: string } => (
     Boolean(place)
     && typeof place === 'object'
     && typeof (place as { name?: unknown }).name === 'string'
@@ -58,6 +65,12 @@ const getNearbyPlaces = (value: unknown): Array<{ name: string; distanceKm: numb
   )).map((place) => ({
     name: place.name,
     distanceKm: Number(place.distanceKm),
+    ...(typeof (place as { street?: unknown }).street === 'string' && (place as { street: string }).street.trim()
+      ? { street: (place as { street: string }).street.trim() }
+      : {}),
+    ...(typeof (place as { fullAddress?: unknown }).fullAddress === 'string' && (place as { fullAddress: string }).fullAddress.trim()
+      ? { fullAddress: (place as { fullAddress: string }).fullAddress.trim() }
+      : {}),
     ...(typeof (place as { brand?: unknown }).brand === 'string' && (place as { brand: string }).brand.trim()
       ? { brand: (place as { brand: string }).brand.trim() }
       : {}),
@@ -87,10 +100,14 @@ const EvidenceReviewCard = ({ evidence, corroborationCount = 0, embedded = false
   const [reason, setReason] = useState('');
   const [isLoadingDocument, setIsLoadingDocument] = useState(false);
   const [sourcePreview, setSourcePreview] = useState<{ url: string; contentType: string; body: string } | null>(null);
+  const [showRawJson, setShowRawJson] = useState(false);
+  const [isSourceDetailsOpen, setIsSourceDetailsOpen] = useState(false);
   const [isListExpanded, setIsListExpanded] = useState(false);
   const [sourceKind, setSourceKind] = useState<'document' | 'source_reference'>(
     /^https?:\/\//i.test(evidence.sourceDocumentPublicId ?? '') ? 'source_reference' : 'document',
   );
+  const user = useAuthStore((state) => state.user);
+  const canViewRawJson = user?.role === 'admin' || user?.role === 'superadmin';
   const source = getSource(evidence.sourceId);
   const tier = useMemo(
     () => classifyEvidenceTier({ claimType: evidence.claimType, value: evidence.value }, source, corroborationCount),
@@ -133,6 +150,8 @@ const EvidenceReviewCard = ({ evidence, corroborationCount = 0, embedded = false
 
   const handleViewDocument = async () => {
     setIsLoadingDocument(true);
+    setShowRawJson(false);
+    setIsSourceDetailsOpen(true);
     try {
       if (sourceKind === 'source_reference') {
         const response = await evidenceApi.getEvidenceSourceReference(evidence._id);
@@ -143,12 +162,9 @@ const EvidenceReviewCard = ({ evidence, corroborationCount = 0, embedded = false
         return;
       }
 
-      const documentWindow = window.open('', '_blank', 'noopener,noreferrer');
       const response = await evidenceApi.getEvidenceDocumentUrl(evidence._id);
       setSourceKind(response.data.kind ?? 'document');
-      if (documentWindow) {
-        documentWindow.location.href = response.data.url;
-      } else {
+      if (response.data.url) {
         window.open(response.data.url, '_blank', 'noopener,noreferrer');
       }
     } catch (error: any) {
@@ -158,15 +174,26 @@ const EvidenceReviewCard = ({ evidence, corroborationCount = 0, embedded = false
     }
   };
 
+  const closeSourceDetails = () => {
+    setShowRawJson(false);
+    setIsSourceDetailsOpen(false);
+  };
+
+  const sourceSummary = useMemo(() => buildSourceDetailsSummary(evidence, source), [evidence, source]);
+  const humanReadableLink = useMemo(() => getHumanReadableSourceLink(source), [source]);
+  const sourceQueryUrl = /^https?:\/\//i.test(evidence.sourceDocumentPublicId ?? '') ? evidence.sourceDocumentPublicId : null;
+
   const cardClassName = embedded
     ? 'space-y-3 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0'
     : 'space-y-4 rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-[#00C9A7]/50 hover:shadow-md';
 
   const collapsedSummary = LIST_CLAIM_TYPES.has(evidence.claimType)
     ? `${getNearbyPlaces(evidence.value)?.length ?? 0} named nearby`
-    : typeof evidence.value === 'number'
-      ? `${evidence.value} total nearby`
-      : formatValue(evidence.value);
+    : formatStructuredPlace(evidence.value, 'km away') ?? (
+      typeof evidence.value === 'number'
+        ? `${evidence.value} total nearby`
+        : formatValue(evidence.value)
+    );
 
   return (
     <div
@@ -228,7 +255,10 @@ const EvidenceReviewCard = ({ evidence, corroborationCount = 0, embedded = false
                     {place.name}
                     {place.brand && <span className="ml-2 text-xs font-medium text-[#008f79]">{place.brand}</span>}
                   </span>
-                  <span className="shrink-0 text-xs font-medium text-slate-500">{place.distanceKm.toFixed(2)} km</span>
+                  <span className="shrink-0 text-right text-xs font-medium text-slate-500">
+                    {place.street || place.fullAddress ? <>{place.street || place.fullAddress} · </> : null}
+                    {place.distanceKm.toFixed(2)} km
+                  </span>
                 </li>
               ))}
             </ul>
@@ -243,7 +273,7 @@ const EvidenceReviewCard = ({ evidence, corroborationCount = 0, embedded = false
             )}
           </>
         ) : (
-          <p className="wrap-break-word text-sm text-slate-700">{formatValue(evidence.value)}</p>
+          <p className="wrap-break-word text-sm text-slate-700">{formatStructuredPlace(evidence.value, 'km away') ?? formatValue(evidence.value)}</p>
         )}
 
         {evidence.aiSummary && (
@@ -255,46 +285,144 @@ const EvidenceReviewCard = ({ evidence, corroborationCount = 0, embedded = false
       </div>}
 
       {detailMode && evidence.sourceDocumentPublicId && (
-        <button
-          type="button"
-          onClick={handleViewDocument}
-          disabled={isLoadingDocument}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:border-[#00C9A7] hover:text-[#00C9A7] disabled:opacity-50"
-        >
-          {isLoadingDocument ? <FileText className="h-3 w-3" /> : <ExternalLink className="h-3 w-3" />}
-          {isLoadingDocument ? 'Loading source...' : sourceKind === 'source_reference' ? 'View source query' : 'View source document'}
-        </button>
-      )}
-
-      {sourcePreview && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center bg-slate-950/60 p-4" role="dialog" aria-modal="true" aria-label="Source query response">
-          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-800">Source query response</p>
-                <p className="truncate text-xs text-slate-500">{sourcePreview.contentType}</p>
-              </div>
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          {!isSourceDetailsOpen ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Source details</p>
               <button
                 type="button"
-                onClick={() => setSourcePreview(null)}
-                aria-label="Close source query response"
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <pre className="min-h-0 flex-1 overflow-auto bg-slate-950 p-4 text-xs leading-5 text-slate-100">{sourcePreview.body}</pre>
-            <div className="flex justify-end border-t border-slate-200 px-4 py-3">
-              <a
-                href={sourcePreview.url}
-                target="_blank"
-                rel="noreferrer"
+                onClick={() => setIsSourceDetailsOpen(true)}
                 className="text-xs font-semibold text-[#008f79] hover:text-[#006f60]"
               >
-                Open raw URL in new tab
-              </a>
+                Show source details
+              </button>
             </div>
-          </div>
+          ) : sourcePreview && sourceKind === 'source_reference' && showRawJson ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Raw source response</p>
+                  <p className="text-xs text-slate-400">{sourcePreview.contentType}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRawJson(false)}
+                    className="text-xs font-semibold text-[#008f79] hover:text-[#006f60]"
+                  >
+                    Back to Source Details
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeSourceDetails}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+              <pre className="max-h-[50vh] overflow-auto rounded-lg bg-slate-950 p-3 text-[11px] leading-5 text-slate-100">{sourcePreview.body}</pre>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#008f79]">Source details</p>
+                <button
+                  type="button"
+                  onClick={closeSourceDetails}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="rounded-lg border border-[#00C9A7]/20 bg-white p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#008f79]">Source details</p>
+                <h3 className="mt-2 text-base font-semibold text-slate-900">{sourceSummary.headline}</h3>
+                <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Source</p>
+                    <p className="mt-1 font-medium">{sourceSummary.source}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Provider</p>
+                    <p className="mt-1 font-medium">{sourceSummary.provider}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Retrieved</p>
+                    <p className="mt-1 font-medium">{sourceSummary.retrievedAt}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Method</p>
+                    <p className="mt-1 font-medium">{sourceSummary.method}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Data summary</p>
+                <dl className="mt-2 space-y-2 text-sm text-slate-700">
+                  {sourceSummary.dataTable.map((row) => (
+                    <div key={row.label} className="flex items-start justify-between gap-3 border-b border-slate-100 pb-1 last:border-b-0 last:pb-0">
+                      <dt className="text-slate-500">{row.label}</dt>
+                      <dd className="text-right font-medium text-slate-700">{row.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {humanReadableLink && (
+                  <a
+                    href={humanReadableLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-[#00C9A7] hover:text-[#00C9A7]"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View on {source?.name?.includes('OpenStreetMap') ? 'OpenStreetMap' : source?.name ?? 'source'}
+                  </a>
+                )}
+                {sourceQueryUrl && (
+                  <a
+                    href={sourceQueryUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Open source query
+                  </a>
+                )}
+                {canViewRawJson && sourceKind === 'source_reference' && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!sourcePreview) {
+                        await handleViewDocument();
+                      }
+                      setShowRawJson(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-[#00C9A7] hover:text-[#00C9A7]"
+                  >
+                    <FileText className="h-3 w-3" />
+                    View Raw JSON
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!sourcePreview && !showRawJson && (
+            <button
+              type="button"
+              onClick={handleViewDocument}
+              disabled={isLoadingDocument}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:border-[#00C9A7] hover:text-[#00C9A7] disabled:opacity-50"
+            >
+              {isLoadingDocument ? <FileText className="h-3 w-3" /> : <ExternalLink className="h-3 w-3" />}
+              {isLoadingDocument ? 'Loading source...' : 'View source details'}
+            </button>
+          )}
         </div>
       )}
 

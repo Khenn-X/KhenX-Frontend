@@ -1,4 +1,5 @@
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -41,13 +42,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  useEffect(() => setIsNavigating(false), [location.pathname]);
 
   const currentPage = agentNavItems.find(
     (item) => item.to === location.pathname,
   );
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
+    <div className="relative flex min-h-screen bg-[#F8FAFC]">
+      {isNavigating && <div className="fixed inset-0 z-[60] flex items-start justify-center bg-white/40 pt-20 backdrop-blur-[1px]" role="status" aria-label="Loading page"><div className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">Loading...</div></div>}
       {/* ── Mobile backdrop ──────────────────────────────────────────── */}
       {isSidebarOpen && (
         <div
@@ -109,6 +114,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <NavLink
               key={to}
               to={to}
+              onClick={() => setIsNavigating(true)}
               title={!isSidebarOpen ? label : undefined}
               className={({ isActive }) =>
                 cn(

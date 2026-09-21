@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorMessage from '../../components/shared/ErrorMessage';
@@ -121,6 +121,7 @@ const AdminNeighbourhoodViewPage = () => {
   const { data, isLoading, isError, refetch } = useAllAreas();
   const areas = useMemo(() => data?.data?.areas ?? [], [data]);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const neighbourhood = useMemo(
     () => areas.find((area) => area.areaName === areaName),
@@ -129,12 +130,18 @@ const AdminNeighbourhoodViewPage = () => {
   const canonical = neighbourhood as (typeof neighbourhood & Record<string, unknown>) | undefined;
   const osmMutation = useMutation({
     mutationFn: (id: string) => neighbourhoodApi.runOsmAmenities(id),
-    onSuccess: (response) => toast.success(`${response.data?.evidenceCreated ?? 0} evidence records sent for review.`),
+    onSuccess: (response) => {
+      void queryClient.invalidateQueries({ queryKey: ['evidence'] });
+      toast.success(`${response.data?.evidenceCreated ?? 0} evidence records sent for review.`);
+    },
     onError: (error: Error) => toast.error(error.message || 'OSM amenity lookup failed.'),
   });
   const osrmMutation = useMutation({
     mutationFn: (id: string) => neighbourhoodApi.runOsrmTravelTimes(id),
-    onSuccess: (response) => toast.success(`${response.data?.evidenceCreated ?? 0} free-flow travel-time records sent for review.`),
+    onSuccess: (response) => {
+      void queryClient.invalidateQueries({ queryKey: ['evidence'] });
+      toast.success(`${response.data?.evidenceCreated ?? 0} free-flow travel-time records sent for review.`);
+    },
     onError: (error: Error) => toast.error(error.message || 'OSRM travel-time lookup failed.'),
   });
 
