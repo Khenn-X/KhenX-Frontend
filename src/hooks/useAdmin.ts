@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminApi, type AdminListingStatus } from '../api/admin.api';
+import { adminApi, type AdminListingStatus, type PaymentAnalyticsParams } from '../api/admin.api';
 import { queryKeys } from '../constants/queryKeys';
+import { dashboardQueryOptions, invalidateDashboardQueries } from '../lib/dashboardQuery';
 import type { ListingStatus } from '../types/listing.types';
 
 export type { AdminListingStatus };
@@ -22,27 +23,40 @@ export type AdminListingsStatus = 'all' | ListingStatus;
  * Access in components: const stats = data?.data.data
  */
 export const useAdminStats = () => {
-  return useQuery({
-    queryKey: queryKeys.admin.stats,
-    queryFn: () => adminApi.getStats(),
-    staleTime: 1000 * 60 * 2,
-    // No select — preserve raw axios response so consumers can read res.data.data
-  });
+  return useQuery(
+    dashboardQueryOptions({
+      queryKey: queryKeys.admin.stats,
+      queryFn: () => adminApi.getStats(),
+      // No select — preserve raw axios response so consumers can read res.data.data
+    }),
+  );
 };
 
 export const useAdminListings = (status: AdminListingsStatus = 'all') => {
-  return useQuery({
-    queryKey: queryKeys.listings.admin(status),
-    queryFn: () => adminApi.getAdminListings(status === 'all' ? undefined : status),
-  });
+  return useQuery(
+    dashboardQueryOptions({
+      queryKey: queryKeys.listings.admin(status),
+      queryFn: () => adminApi.getAdminListings(status === 'all' ? undefined : status),
+    }),
+  );
 };
 
 export const useAdminPayments = (state?: string) => {
-  return useQuery({
-    queryKey: [...queryKeys.admin.payments, state ?? 'all'],
-    queryFn: () => adminApi.getPayments(state),
-    staleTime: 1000 * 60 * 2,
-  });
+  return useQuery(
+    dashboardQueryOptions({
+      queryKey: [...queryKeys.admin.payments, state ?? 'all'],
+      queryFn: () => adminApi.getPayments(state),
+    }),
+  );
+};
+
+export const useAdminPaymentAnalytics = (params: PaymentAnalyticsParams) => {
+  return useQuery(
+    dashboardQueryOptions({
+      queryKey: queryKeys.admin.paymentAnalytics(params),
+      queryFn: () => adminApi.getPaymentAnalytics(params),
+    }),
+  );
 };
 
 export const useAdminPendingListings = (status: AdminListingsStatus = 'pending') => {
@@ -54,8 +68,7 @@ export const useApproveListing = () => {
   return useMutation({
     mutationFn: (id: string) => adminApi.approveListing(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.listings.admin() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin.stats });
+      invalidateDashboardQueries(queryClient, queryKeys.listings.admin(), queryKeys.admin.stats);
     },
   });
 };
@@ -66,8 +79,7 @@ export const useRejectListing = () => {
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       adminApi.rejectListing(id, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.listings.admin() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin.stats });
+      invalidateDashboardQueries(queryClient, queryKeys.listings.admin(), queryKeys.admin.stats);
     },
   });
 };
@@ -78,18 +90,23 @@ export const useFeatureListing = () => {
     mutationFn: ({ id, isFeatured }: { id: string; isFeatured: boolean }) =>
       adminApi.featureListing(id, isFeatured),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.listings.admin() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.listings.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.listings.all() });
+      invalidateDashboardQueries(
+        queryClient,
+        queryKeys.listings.admin(),
+        queryKeys.listings.detail(variables.id),
+        queryKeys.listings.all(),
+      );
     },
   });
 };
 
 export const useAdminAgents = () => {
-  return useQuery({
-    queryKey: queryKeys.admin.agents,
-    queryFn: () => adminApi.getAllAgents(),
-  });
+  return useQuery(
+    dashboardQueryOptions({
+      queryKey: queryKeys.admin.agents,
+      queryFn: () => adminApi.getAllAgents(),
+    }),
+  );
 };
 
 export const useSuspendAgent = () => {
@@ -98,8 +115,7 @@ export const useSuspendAgent = () => {
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
       adminApi.suspendAgent(id, reason),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin.agents });
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin.stats });
+      invalidateDashboardQueries(queryClient, queryKeys.admin.agents, queryKeys.admin.stats);
     },
   });
 };

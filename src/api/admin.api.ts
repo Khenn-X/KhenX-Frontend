@@ -37,6 +37,32 @@ export interface PaymentTransaction {
   updatedAt: string;
 }
 
+export type PaymentAnalyticsPeriod = 'day' | 'week' | 'month' | 'year';
+export interface PaymentAnalyticsParams {
+  period: PaymentAnalyticsPeriod;
+  from?: string;
+  to?: string;
+  subscriptionType?: string;
+  payerType?: string;
+}
+export interface PaymentAnalytics {
+  period: PaymentAnalyticsPeriod;
+  timezone: string;
+  range: { from: string; to: string };
+  buckets: Array<{ key: string; label: string; successfulRevenue: number; successfulCount: number }>;
+  selectedPeriod: {
+    successfulRevenue: number;
+    successfulCount: number;
+    averageSuccessfulPayment: number;
+    refundedAmount: number;
+    reversedAmount: number;
+    comparisonPercent: number | null;
+  };
+  quickTotals: Record<string, { successfulRevenue: number; successfulCount: number }>;
+  bySubscriptionType: Array<{ _id: string; revenue: number; count: number }>;
+  byPayerType: Array<{ _id: string; revenue: number; count: number }>;
+}
+
 export const adminApi = {
   // Admin — get platform-wide stats
   getStats: async (): Promise<ApiResponse<{
@@ -60,6 +86,11 @@ export const adminApi = {
 
   getPayments: async (state?: string): Promise<ApiResponse<{ transactions: PaymentTransaction[]; total: number }>> => {
     const { data } = await api.get('/admin/payments', { params: state && state !== 'all' ? { state } : undefined });
+    return data;
+  },
+
+  getPaymentAnalytics: async (params: PaymentAnalyticsParams): Promise<ApiResponse<PaymentAnalytics>> => {
+    const { data } = await api.get('/admin/payments/analytics', { params });
     return data;
   },
 

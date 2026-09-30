@@ -10,7 +10,7 @@ import type { UpdateListingPayload } from '../../types/listing.types';
 const EditListingPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, isLoading, isError, error, refetch } = useListing(id!);
+  const { data, isLoading, isError, error, refetch } = useListing(id!, 'dashboard');
   const { mutate: updateListing, isPending } = useUpdateListing(id!);
 
   const listing = data?.data?.listing;

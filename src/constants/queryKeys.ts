@@ -73,6 +73,7 @@ export const queryKeys = {
     stats: ['admin', 'stats'] as const,
     agents: ['admin', 'agents'] as const,
     payments: ['admin', 'payments'] as const,
+    paymentAnalytics: (params?: object) => ['admin', 'payments', 'analytics', params] as const,
   },
 
   payments: {

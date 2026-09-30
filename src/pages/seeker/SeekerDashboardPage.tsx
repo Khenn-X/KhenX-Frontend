@@ -11,7 +11,7 @@ import { ROUTES } from '../../constants/routes';
 
 const SeekerDashboardPage = () => {
   const { user } = useAuthStore();
-  const { data, isLoading, isError, refetch } = useSavedListings();
+  const { data, isLoading, isError, refetch } = useSavedListings('dashboard');
   const navigate = useNavigate();
 
   const savedListings = Array.isArray(data?.data?.listings) ? data.data.listings : [];

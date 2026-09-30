@@ -6,11 +6,9 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorMessage from '../../components/shared/ErrorMessage';
 import { ROUTES } from '../../constants/routes';
 import { timeAgo } from '../../lib/utils';
-import HeroPromoCard from '../../components/dashboard/HeroPromoCard';
-import BarChartCard from '../../components/dashboard/BarChartCard';
-import AreaChartCard from '../../components/dashboard/AreaChartCard';
 import ActiveUsersStrip from '../../components/dashboard/ActiveUsersStrip';
 import ActivityTimelineCard from '../../components/dashboard/ActivityTimelineCard';
+import RevenueInsights from '../../components/admin/RevenueInsights';
 
 /** Unwraps the axios → API-envelope response down to the stats payload. */
 function extractStats(data: unknown): Record<string, any> | null {
@@ -299,27 +297,7 @@ const AdminDashboardPage = () => {
             </div>
           </section>
 
-          {/* ── NEW: hero promo cards ── */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <HeroPromoCard
-              eyebrow="Platform health"
-              title="KhenX Admin Console"
-              description="Full visibility across listings, agents, and fraud reports in one place."
-              variant="light"
-            />
-            <HeroPromoCard
-              eyebrow="Admin"
-              title="Review Queue"
-              description="Stay on top of listings, KYC, and fraud reports as they come in."
-              variant="dark"
-            />
-          </div>
-
-          {/* ── NEW: charts ── */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <BarChartCard />
-            <AreaChartCard />
-          </div>
+          <RevenueInsights subscriptionType="all" payerType="all" />
 
           {/* ── NEW: active users strip ── */}
           <ActiveUsersStrip />

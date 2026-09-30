@@ -1,24 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { savedApi } from '../api/saved.api';
 import { queryKeys } from '../constants/queryKeys';
-import { useAuthStore } from '../store/auth.store';
+import { dashboardQueryOptions, invalidateDashboardQueries, publicQueryOptions } from '../lib/dashboardQuery';
 import { extractSavedListings } from '../lib/savedListings';
+import { useAuthStore } from '../store/auth.store';
 
-export const useSavedListings = () => {
+export const useSavedListings = (scope: 'public' | 'dashboard' = 'public') => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  return useQuery({
-    queryKey: queryKeys.saved.all,
-    queryFn: () => savedApi.getSavedListings(),
-    enabled: isAuthenticated,
-    select: (response) => ({
-      ...response,
-      data: {
-        ...response.data,
-        listings: extractSavedListings(response),
-      },
+  return useQuery(
+    (scope === 'dashboard' ? dashboardQueryOptions : publicQueryOptions)({
+      queryKey: queryKeys.saved.all,
+      queryFn: () => savedApi.getSavedListings(),
+      enabled: isAuthenticated,
+      select: (response) => ({
+        ...response,
+        data: {
+          ...response.data,
+          listings: extractSavedListings(response),
+        },
+      }),
     }),
-  });
+  );
 };
 
 export const useSaveListing = () => {
@@ -27,7 +30,7 @@ export const useSaveListing = () => {
   return useMutation({
     mutationFn: (listingId: string) => savedApi.saveListing(listingId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.saved.all });
+      invalidateDashboardQueries(queryClient, queryKeys.saved.all);
     },
   });
 };
@@ -38,7 +41,7 @@ export const useUnsaveListing = () => {
   return useMutation({
     mutationFn: (listingId: string) => savedApi.unsaveListing(listingId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.saved.all });
+      invalidateDashboardQueries(queryClient, queryKeys.saved.all);
     },
   });
 };

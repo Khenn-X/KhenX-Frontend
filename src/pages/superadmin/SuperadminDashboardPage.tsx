@@ -13,12 +13,10 @@ import ErrorMessage from "../../components/shared/ErrorMessage";
 import { ROUTES } from "../../constants/routes";
 import { timeAgo } from "../../lib/utils";
 // import StatCardWithBadge from '../../components/dashboard/StatCardWithBadge';
-import HeroPromoCard from "../../components/dashboard/HeroPromoCard";
-import BarChartCard from "../../components/dashboard/BarChartCard";
-import AreaChartCard from "../../components/dashboard/AreaChartCard";
 import ActiveUsersStrip from "../../components/dashboard/ActiveUsersStrip";
 import ProjectsTable from "../../components/dashboard/ProjectsTable";
 import ActivityTimelineCard from "../../components/dashboard/ActivityTimelineCard";
+import RevenueInsights from "../../components/admin/RevenueInsights";
 
 /** Unwraps the axios → API-envelope response down to the stats payload. */
 function extractStats(data: unknown): Record<string, any> | null {
@@ -304,27 +302,7 @@ const SuperadminDashboardPage = () => {
             </div>
           </section>
 
-          {/* ── Hero promo cards ── */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <HeroPromoCard
-              eyebrow="Platform health"
-              title="KhenX Admin Console"
-              description="Full visibility across listings, agents, and fraud reports in one place."
-              variant="light"
-            />
-            <HeroPromoCard
-              eyebrow="Superadmin"
-              title="Manage Admins"
-              description="Approve new admin accounts and control platform-wide access."
-              variant="dark"
-            />
-          </div>
-
-          {/* ── Charts ── */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <BarChartCard />
-            <AreaChartCard />
-          </div>
+          <RevenueInsights subscriptionType="all" payerType="all" />
 
           {/* ── Active users strip ── */}
           <ActiveUsersStrip />

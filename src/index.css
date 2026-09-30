@@ -2,6 +2,17 @@
 
 :root {
   --khenx-brand-teal-dark: #006A61;
+  --cursor-color: var(--khenx-brand-teal-dark);
+  --cursor-dot-size: 8px;
+  --cursor-mid-size: 38px;
+  --cursor-outer-size: 64px;
+  --cursor-mid-opacity: 0.22;
+  --cursor-outer-opacity: 0.1;
+  --loader-color: var(--khenx-brand-teal-dark);
+  --loader-size: 48px;
+  --loader-stroke: 3px;
+  --loader-blur: 4px;
+  --loader-scrim: rgba(248, 250, 252, 0.32);
 }
 
 /* ── Global font ─────────────────────────────────────────────────────────────── */

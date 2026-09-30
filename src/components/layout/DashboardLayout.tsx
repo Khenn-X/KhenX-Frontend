@@ -1,4 +1,5 @@
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
@@ -9,7 +10,6 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  // ChevronRight,
   Menu,
   History,
 } from "lucide-react";
@@ -18,8 +18,11 @@ import { useUIStore } from "../../store/ui.store";
 import { useLogout } from "../../hooks/useAuth";
 import { ROUTES } from "../../constants/routes";
 import { cn, getInitials } from "../../lib/utils";
+import { hasCachedPageDashboardData, isPageDashboardQuery } from "../../lib/dashboardQuery";
 import logo from "../../assets/kgreen.png";
 import NotificationBell from "../notifications/NotificationBell";
+import TopProgressBar from "./TopProgressBar";
+import PageLoader from "./PageLoader";
 
 const agentNavItems = [
   { label: "Dashboard", to: ROUTES.AGENT_DASHBOARD, icon: LayoutDashboard },
@@ -42,9 +45,28 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isNavigating, setIsNavigating] = useState(false);
+  const queryClient = useQueryClient();
+  const pageIsFetching = useIsFetching({
+    predicate: (query) => isPageDashboardQuery(query),
+  });
+  const hasCachedPageData = hasCachedPageDashboardData(queryClient);
+  const [showRouteOverlay, setShowRouteOverlay] = useState(false);
 
-  useEffect(() => setIsNavigating(false), [location.pathname]);
+  useEffect(() => {
+    if (!pageIsFetching || hasCachedPageData) {
+      setShowRouteOverlay(false);
+      return;
+    }
+
+    const showTimer = window.setTimeout(() => setShowRouteOverlay(true), 400);
+    const failSafeTimer = window.setTimeout(() => setShowRouteOverlay(false), 8000);
+
+    return () => {
+      window.clearTimeout(showTimer);
+      window.clearTimeout(failSafeTimer);
+      setShowRouteOverlay(false);
+    };
+  }, [pageIsFetching, hasCachedPageData, location.pathname]);
 
   const currentPage = agentNavItems.find(
     (item) => item.to === location.pathname,
@@ -52,7 +74,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className="relative flex min-h-screen bg-[#F8FAFC]">
-      {isNavigating && <div className="fixed inset-0 z-[60] flex items-start justify-center bg-white/40 pt-20 backdrop-blur-[1px]" role="status" aria-label="Loading page"><div className="rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm">Loading...</div></div>}
+      <TopProgressBar active={pageIsFetching > 0} />
+      {pageIsFetching > 0 && hasCachedPageData && (
+        <div className="pointer-events-none absolute left-1/2 top-4 z-[65] -translate-x-1/2 rounded-full border border-[#00C9A7]/20 bg-white/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#006A61] shadow-sm backdrop-blur-sm" role="status" aria-live="polite" aria-busy="true">
+          Updating...
+        </div>
+      )}
       {/* ── Mobile backdrop ──────────────────────────────────────────── */}
       {isSidebarOpen && (
         <div
@@ -114,7 +141,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <NavLink
               key={to}
               to={to}
-              onClick={() => setIsNavigating(true)}
               title={!isSidebarOpen ? label : undefined}
               className={({ isActive }) =>
                 cn(
@@ -259,7 +285,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
 
         {/* Page content */}
-        <div className="px-4 sm:px-6 py-4">{children}</div>
+        <div className="relative px-4 sm:px-6 py-4">
+          <PageLoader visible={showRouteOverlay} />
+          {children}
+        </div>
       </main>
     </div>
   );
