@@ -35,6 +35,16 @@ export type RentByBedroom = Partial<
   Record<RentBucketKey, RentBucketResolution>
 >;
 
+export interface NamedPlaceListItem {
+  name?: string | null;
+  distanceKm?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  brand?: string | null;
+  osmType?: string | null;
+  osmId?: number | null;
+}
+
 export interface INeighbourhoodIntelligence {
    resolvedRentByBedroom: RentByBedroom;
   lagosWideRentByBedroom: RentByBedroom;
@@ -44,6 +54,16 @@ export interface INeighbourhoodIntelligence {
   lga?: string | null;
   createdAt: string;
   updatedAt: string;
+
+  nearestPoliceStation?: {
+    name?: string | null;
+    distanceKm?: number | null;
+    responseTimeMin?: number | null;
+  } | null;
+  airQualityRating?: number | null;
+  schoolNearestList?: NamedPlaceListItem[] | null;
+  bankNearestList?: NamedPlaceListItem[] | null;
+  marketNearestList?: NamedPlaceListItem[] | null;
 
   // ── Intelligence scores (all optional — null means no data yet) ──
   powerScore?:          number | null; // 0–10
@@ -147,13 +167,49 @@ export interface WaitlistPayload {
 }
 
 export interface ResidentReportPayload {
-  areaName:           string;
-  reporterEmail?:     string;
-  powerHoursDaily?:   number;
+  areaName?: string;
+  reporterEmail: string;
+  reporterName?: string;
+  streetEstate?: string;
+  reportDate?: string;
+  season?: 'rainy' | 'dry';
+  powerHoursDaily?: number;
+  powerTrend?: 'better' | 'same' | 'worse';
+  waterSource?: 'public_mains' | 'borehole' | 'tanker' | 'no_reliable_source';
+  boreholeStatus?: 'functioning' | 'reduced_flow' | 'dry';
+  waterAffectedByFlood?: boolean;
   floodedLastSeason?: boolean;
-  floodSeverity?:     FloodSeverity;
-  securityRating?:    number; // 1–5
-  incidentCategory?:  string;
+  floodSeverity?: FloodSeverity | 'none';
+  floodingLevel?: 'none' | 'minor' | 'moderate' | 'severe';
+  drainageRating?: number;
+  lastFloodMonth?: string;
+  dustIntensity?: 'none' | 'mild' | 'moderate' | 'heavy';
+  fireIncidentNearby?: boolean;
+  securityIncidents?: 'none' | 'one' | 'multiple';
+  incidentTypes?: string[];
+  incidentCategory?: 'none' | 'petty_theft' | 'robbery' | 'area_boys' | 'other';
+  securityRating?: number; // 1–5
+  nightSafetyRating?: number; // 1–5
+  vigilantePresent?: 'yes_active' | 'yes_rarely' | 'no';
+  roadCondition?: 'good' | 'fair' | 'poor' | 'impassable';
+  roadChangedRecently?: 'no_change' | 'got_worse' | 'got_better';
+  streetLighting?: 'fully_lit' | 'partially_lit' | 'not_lit';
+  noiseLevel?: number;
+  estateSecurityType?: 'none' | 'manned_gate' | 'cctv' | 'patrol' | 'smart_access';
+  wasteCollectionReliability?: 'reliable' | 'irregular' | 'none';
+  commuteTimeIslandMin?: number;
+  commuteTimeIkejaMin?: number;
+  trafficCongestionRating?: number;
+  publicTransportAccess?: 'none' | 'limited' | 'available' | 'strong';
+  internetQualityRating?: number;
+  mobileNetworkQuality?: 'none' | '3g' | '4g' | '5g';
+  has4G5GCoverage?: boolean;
+  neighbourRelationsRating?: number;
+  commercialActivityLevel?: 'quiet' | 'mixed' | 'busy' | 'very_busy';
+  additionalNotes?: string;
+  source?: 'resident_form' | 'admin_import' | 'disco_data' | 'satellite' | 'partner';
+  isVerified?: boolean;
+  ipAddress?: string;
 }
 
 export interface FeaturedAreasQuery {

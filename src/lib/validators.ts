@@ -375,7 +375,7 @@ export const waitlistSchema = z.object({
 // Simple resident report (used inside listing/neighbourhood pages)
 export const residentReportSchema = z.object({
   areaName:           z.string().min(1, 'Please select your area'),
-  reporterEmail:      z.string().email().optional().or(z.literal('')),
+  reporterEmail:      z.string().trim().min(1, 'Email is required').email('Please enter a valid email address'),
   powerHoursDaily:    z.number().min(0).max(24).optional(),
   floodedLastSeason:  z.boolean().optional(),
   floodSeverity:      z.enum(['none','minor','moderate','severe']).optional(),
@@ -391,7 +391,7 @@ export const residentReportSchema = z.object({
 export const neighbourhoodUpdateSchema = z.object({
 
   // ── Reporter info ──────────────────────────────────────────
-  reporterEmail:  z.string().email('Please enter a valid email').optional().or(z.literal('')),
+  reporterEmail:  z.string().trim().min(1, 'Email is required').email('Please enter a valid email'),
   reporterName:   z.string().optional(),
   areaName:       z.string().min(1, 'Please select your area'),
   streetEstate:   z.string().min(2, 'Please enter your street or estate name'),
@@ -434,6 +434,7 @@ export const neighbourhoodUpdateSchema = z.object({
     'moderate',  // ankle-to-knee deep
     'severe',    // waist deep or worse
   ]).optional(),
+  floodDuration: z.enum(['hours', 'day', 'days', 'week_plus']).optional(),
 
   drainageRating: z.number().int().min(1).max(5).optional(),
 
@@ -470,6 +471,19 @@ export const neighbourhoodUpdateSchema = z.object({
   // ── Street environment (both seasons) ─────────────────────
   streetLighting:  z.enum(['fully_lit', 'partially_lit', 'not_lit']).optional(),
   noiseLevel:      z.number().int().min(1).max(5).optional(),
+
+  // ── Optional community / area quality details ─────────────
+  estateSecurityType: z.enum(['none', 'manned_gate', 'cctv', 'patrol', 'smart_access']).optional(),
+  wasteCollectionReliability: z.enum(['reliable', 'irregular', 'none']).optional(),
+  commuteTimeIslandMin: z.number().int().min(0).max(600).optional(),
+  commuteTimeIkejaMin: z.number().int().min(0).max(600).optional(),
+  trafficCongestionRating: z.number().int().min(1).max(5).optional(),
+  publicTransportAccess: z.enum(['none', 'limited', 'available', 'strong']).optional(),
+  internetQualityRating: z.number().int().min(1).max(5).optional(),
+  mobileNetworkQuality: z.enum(['none', '3g', '4g', '5g']).optional(),
+  has4G5GCoverage: z.boolean().optional(),
+  neighbourRelationsRating: z.number().int().min(1).max(5).optional(),
+  commercialActivityLevel: z.enum(['quiet', 'mixed', 'busy', 'very_busy']).optional(),
 
   // ── Open notes ────────────────────────────────────────────
   additionalNotes: z.string().max(500).optional(),

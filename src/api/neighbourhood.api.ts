@@ -47,6 +47,51 @@ export const neighbourhoodApi = {
     return data;
   },
 
+  listResidentReports: async (): Promise<ApiResponse<Array<{
+    _id: string;
+    areaName: string;
+    reporterEmail: string;
+    reporterName?: string;
+    streetEstate?: string;
+    reportDate?: string;
+    createdAt: string;
+    status: 'pending_review' | 'verified' | 'rejected' | 'mixed' | 'no_evidence';
+    evidenceCount: number;
+    claimTypes: string[];
+    summary?: string;
+  }>>> => {
+    const { data } = await api.get('/admin/resident-reports');
+    return data;
+  },
+
+  getResidentReport: async (id: string): Promise<ApiResponse<{
+    _id: string;
+    areaName: string;
+    reporterEmail: string;
+    reporterName?: string;
+    streetEstate?: string;
+    reportDate?: string;
+    createdAt: string;
+    status: 'pending_review' | 'verified' | 'rejected' | 'mixed' | 'no_evidence';
+    evidenceCount: number;
+    claimTypes: string[];
+    evidence: Array<{
+      _id: string;
+      claimType: string;
+      value: unknown;
+      status: 'pending_review' | 'verified' | 'rejected' | 'superseded';
+      observedAt: string;
+      confidence?: number;
+      sourceId?: unknown;
+      sourceDocumentPublicId?: string;
+      aiSummary?: string;
+      rejectionReason?: string;
+    }>;
+  }>> => {
+    const { data } = await api.get(`/admin/resident-reports/${encodeURIComponent(id)}`);
+    return data;
+  },
+
   // Admin: bulk CSV import with preview / explicit commit
   importNeighbourhoodCsv: async (
     file: File,

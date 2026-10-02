@@ -103,6 +103,8 @@ const AdminListingsPage = lazy(
 );
 const AdminKYCPage = lazy(() => import("../pages/admin/AdminKYCPage"));
 const AdminEvidencePage = lazy(() => import("../pages/admin/AdminEvidencePage"));
+const AdminCommunitySubmissionsPage = lazy(() => import("../pages/admin/AdminCommunitySubmissionsPage"));
+const AdminCommunitySubmissionDetailPage = lazy(() => import("../pages/admin/AdminCommunitySubmissionDetailPage"));
 const AdminFraudPage = lazy(() => import("../pages/admin/AdminFraudPage"));
 const AdminSupportPage = lazy(() => import("../pages/admin/AdminSupportPage"));
 const AdminAgentsPage = lazy(() => import("../pages/admin/AdminAgentsPage"));
@@ -135,6 +137,29 @@ const PublicLayout = ({ children }: { children: React.ReactNode }) => (
     <Navbar />
     <main className="flex-1">{children}</main>
     <Footer />
+  </div>
+);
+
+const ContributeStandaloneLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen flex flex-col bg-slate-50">
+    <header className="border-b border-slate-200 bg-white/90 backdrop-blur-sm">
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0A1628] text-sm font-bold text-[#00C9A7] shadow-sm">
+              K
+            </div>
+            <div className="text-xl font-black tracking-tight text-[#0A1628]">KhenX</div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main className="flex-1">{children}</main>
+    <footer className="border-t border-slate-200 bg-white">
+      <div className="mx-auto max-w-7xl px-4 py-4 text-center text-xs text-slate-500">
+        © 2026 KhenX. All rights reserved.
+      </div>
+    </footer>
   </div>
 );
 
@@ -287,9 +312,9 @@ const AppRouter = () => {
         <Route
           path="/neighbourhood/contribute"
           element={
-            <PublicLayout>
+            <ContributeStandaloneLayout>
               <ContributePage />
-            </PublicLayout>
+            </ContributeStandaloneLayout>
           }
         />
         {/* ↑ All static routes above — dynamic param below ↓ */}
@@ -563,6 +588,26 @@ const AppRouter = () => {
             <AdminRoute>
               <AdminLayout>
                 <AdminEvidencePage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/community-submissions"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <AdminCommunitySubmissionsPage />
+              </AdminLayout>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/community-submissions/:id"
+          element={
+            <AdminRoute>
+              <AdminLayout>
+                <AdminCommunitySubmissionDetailPage />
               </AdminLayout>
             </AdminRoute>
           }

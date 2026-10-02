@@ -145,21 +145,19 @@ export default function LifestylesPage() {
       `}</style>
 
       {/* HERO */}
-      <section className="relative isolate overflow-hidden bg-[#0A1628] py-24 sm:py-32">
-        {heroImage && (
-          <img
-            src={heroImage}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 -z-20 h-full w-full object-cover opacity-20"
-          />
-        )}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#0A1628] via-[#0A1628]/95 to-[#0A1628]/75" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-[#0A1628] via-transparent to-[#0A1628]/60" />
+      <section
+        className="relative isolate overflow-hidden bg-[#0A1628] py-24 sm:py-32"
+        style={heroImage ? {
+          backgroundImage: `linear-gradient(90deg, rgba(10,22,40,0.82) 0%, rgba(10,22,40,0.72) 46%, rgba(10,22,40,0.78) 100%), url(${heroImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        } : undefined}
+      >
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(0,201,167,0.25),_transparent_30%),linear-gradient(180deg,rgba(10,22,40,0.2),rgba(10,22,40,0.35))]" />
         <div
           aria-hidden="true"
           className="khenx-blob pointer-events-none absolute -right-24 -top-24 -z-10 h-[420px] w-[420px] rounded-full opacity-30 blur-3xl"
-          style={{ background: 'radial-gradient(circle, #00C9A7 0%, transparent 70%)', animation: 'khenx-drift 14s ease-in-out infinite' }}
+          style={{ background: 'radial-gradient(circle, rgba(0,201,167,0.9) 0%, transparent 70%)', animation: 'khenx-drift 14s ease-in-out infinite' }}
         />
 
         <PageWrapper>

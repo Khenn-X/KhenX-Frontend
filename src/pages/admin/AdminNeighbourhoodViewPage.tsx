@@ -128,6 +128,12 @@ const AdminNeighbourhoodViewPage = () => {
     [areas, areaName],
   );
   const canonical = neighbourhood as (typeof neighbourhood & Record<string, unknown>) | undefined;
+  const handleDownloadReport = () => {
+    if (!areaName) return;
+    const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+    const fileUrl = `${baseUrl}/neighbourhood/${encodeURIComponent(areaName)}/report.pdf`;
+    window.open(fileUrl, '_blank', 'noopener,noreferrer');
+  };
   const osmMutation = useMutation({
     mutationFn: (id: string) => neighbourhoodApi.runOsmAmenities(id),
     onSuccess: (response) => {
@@ -199,6 +205,15 @@ const AdminNeighbourhoodViewPage = () => {
               className="inline-flex items-center justify-center gap-2 rounded-full border border-amber-300/50 bg-amber-400/10 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-400/20 disabled:cursor-wait disabled:opacity-60"
             >
               {osrmMutation.isPending ? 'Checking OSRM...' : 'Run OSRM travel-time check'}
+            </button>
+          )}
+          {areaName && (
+            <button
+              type="button"
+              onClick={handleDownloadReport}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#00C9A7]/40 bg-[#00C9A7]/10 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#00C9A7]/20"
+            >
+              Download PDF report
             </button>
           )}
         </div>

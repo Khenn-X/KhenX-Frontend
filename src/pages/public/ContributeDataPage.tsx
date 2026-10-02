@@ -2,35 +2,62 @@ import { useState } from 'react';
 import {
   Users, Zap, Droplets, Shield, CheckCircle,
   ArrowRight, Database, Clock, MapPin,
+  Waves, Route, Wifi, ChevronDown,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import ResidentReportForm from '../../components/neighbourhood/ResidentReportForm';
 import WaitlistForm from '../../components/neighbourhood/WaitlistForm';
 import PageWrapper from '../../components/layout/PageWrapper';
 import { cn } from '../../lib/utils';
 
-// Why each data point matters
+// What we collect, why it matters, and what it means for the person reading the score
 const DATA_POINTS = [
   {
     icon: Zap,
-    color: 'text-amber-500',
-    bg:    'bg-amber-50',
-    title: 'Power Supply',
-    desc:  'How many hours of electricity does your area get daily? This is the number one question Lagos renters ask — and no one answers it honestly.',
+    color: 'text-amber-400',
+    title: 'Power supply',
+    ask:   'On average, how many hours of electricity does your area get each day?',
+    why:   'It is the number one question Lagos renters ask, and the hardest to get an honest answer to. Light decides how much you spend on fuel, whether you can work from home, and how comfortable daily life is.',
+    helps: ['Estimate real monthly energy costs', 'Compare areas by actual supply', 'Avoid areas that rarely get light'],
   },
   {
     icon: Droplets,
-    color: 'text-blue-500',
-    bg:    'bg-blue-50',
-    title: 'Flood History',
-    desc:  'Did your area flood last rainy season? This information is almost never disclosed by agents and is discovered only after moving in.',
+    color: 'text-blue-400',
+    title: 'Flood history',
+    ask:   'Did your area flood during the last rainy season?',
+    why:   'Agents almost never disclose flooding, so people usually discover it after moving in. It affects damaged belongings, blocked roads and repair costs.',
+    helps: ['Spot flood-prone streets before renting', 'Plan ahead for the rainy season', 'Avoid expensive surprises after moving in'],
   },
   {
     icon: Shield,
-    color: 'text-green-500',
-    bg:    'bg-green-50',
-    title: 'Security Rating',
-    desc:  'How safe do you feel in your neighbourhood? General community ratings — no personal details, no incident specifics.',
+    color: 'text-green-400',
+    title: 'Security rating',
+    ask:   'How safe do you feel in your neighbourhood?',
+    why:   'Safety shapes everything from when you can get home to where you can park. We only collect a general community rating, with no personal details and no incident specifics.',
+    helps: ['Get a general sense of how safe an area feels', 'Compare neighbourhoods side by side', 'Decide with more confidence'],
+  },
+  {
+    icon: Waves,
+    color: 'text-cyan-400',
+    title: 'Water supply',
+    ask:   'How reliable is water in your area, from the tap, borehole or other sources?',
+    why:   'Running water is easy to assume and expensive to replace. Areas without reliable supply mean buying water, running pumps and planning your week around it.',
+    helps: ['Estimate extra monthly water costs', 'Check if a borehole is really needed', 'Avoid areas with constant shortages'],
+  },
+  {
+    icon: Route,
+    color: 'text-violet-400',
+    title: 'Roads and traffic',
+    ask:   'What are the roads like, and how bad is traffic getting in and out of your area?',
+    why:   'A home that looks close on the map can mean hours in traffic every day. Bad roads also affect how easily you get home during the rainy season.',
+    helps: ['Judge the real daily commute', 'Spot areas with poor access', 'Choose a location that fits your routine'],
+  },
+  {
+    icon: Wifi,
+    color: 'text-indigo-400',
+    title: 'Internet and network',
+    ask:   'How strong and reliable are internet and mobile network where you live?',
+    why:   'For remote workers, students and small businesses, a weak connection can be a dealbreaker. Providers differ a lot from one street to the next.',
+    helps: ['Check if an area suits remote work', 'See which providers work well locally', 'Avoid paying for service that does not deliver'],
   },
 ];
 
@@ -39,7 +66,7 @@ const PROCESS_STEPS = [
   {
     icon: Users,
     title: 'Community submits reports',
-    desc:  'Residents across Lagos fill in the form below — power hours, flood history, security rating for their specific area.',
+    desc:  'Residents across Lagos fill in the form below — power, water, flooding, security, roads and internet for their specific area.',
   },
   {
     icon: Database,
@@ -64,6 +91,61 @@ const AREAS_NEEDING_DATA = [
   'Mushin', 'Oshodi', 'Shomolu', 'Ojota',
 ];
 
+type DataPoint = (typeof DATA_POINTS)[number];
+
+const DataPointCard = ({ point }: { point: DataPoint }) => {
+  const [open, setOpen] = useState(false);
+  const { icon: Icon, color, title, ask, why, helps } = point;
+
+  return (
+    <div className="rounded-2xl border border-white/15 bg-white/[0.07] p-5 shadow-lg shadow-black/10 backdrop-blur-xl transition-colors hover:bg-white/10">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10">
+          <Icon className={cn('h-5 w-5', color)} />
+        </div>
+        <p className="font-semibold text-white">{title}</p>
+      </div>
+
+      <p className="mt-4 text-sm text-slate-300 leading-snug">{ask}</p>
+
+      {/* Expandable details */}
+      <div
+        className={cn(
+          'grid transition-[grid-template-rows] duration-300 ease-out',
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="pt-4">
+            <p className="text-xs font-semibold text-slate-400 mb-1">Why it matters</p>
+            <p className="text-sm text-slate-300 leading-relaxed mb-4">{why}</p>
+
+            <p className="text-xs font-semibold text-slate-400 mb-2">It helps people</p>
+            <ul className="space-y-2">
+              {helps.map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <CheckCircle className="h-3.5 w-3.5 text-[#00C9A7] shrink-0 mt-0.5" />
+                  <span className="text-xs text-slate-300 leading-relaxed">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="mt-4 inline-flex items-center gap-1.5 rounded text-xs font-medium text-[#00C9A7] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00C9A7]"
+      >
+        {open ? 'Show less' : 'Read more'}
+        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-300', open && 'rotate-180')} />
+      </button>
+    </div>
+  );
+};
+
 const ContributeDataPage = () => {
   const [activeTab, setActiveTab] = useState<'report' | 'waitlist'>('report');
 
@@ -87,10 +169,27 @@ const ContributeDataPage = () => {
               <span className="text-[#00C9A7]">Share what you know.</span>
             </h1>
 
-            <p className="mt-4 text-slate-400 leading-relaxed max-w-lg mx-auto">
-              Every report you submit helps a future Lagos resident make a better housing
-              decision. Power supply, flood history, security — your knowledge matters.
+            <p className="mt-4 text-slate-300 leading-relaxed max-w-xl mx-auto">
+              KhenX is a neighbourhood intelligence platform for Lagos. We turn real
+              reports from residents into clear scores for power, flooding and
+              security, so renters and buyers can see what an area is really like
+              before they commit.
             </p>
+
+            <p className="mt-3 text-slate-400 leading-relaxed max-w-xl mx-auto">
+              Agents rarely share these things, so people usually find out after
+              they have paid. Your report is what changes that for the next person.
+              Please answer honestly, because every report feeds a score someone
+              will use to decide where to live.
+            </p>
+
+            <a
+              href="#submit-report"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#00C9A7] px-5 py-2.5 text-sm font-semibold text-[#0A1628] hover:bg-[#00C9A7]/90 transition-colors"
+            >
+              Submit your report
+              <ArrowRight className="h-4 w-4" />
+            </a>
 
             {/* Impact statement */}
             <div className="mt-8 grid grid-cols-3 gap-4 max-w-sm mx-auto">
@@ -112,35 +211,33 @@ const ContributeDataPage = () => {
       <PageWrapper className="py-14 space-y-14">
 
         {/* ── WHY YOUR DATA MATTERS ─────────────────────────────── */}
-        <section>
-          <div className="text-center mb-8">
-            <h2 className="text-xl font-bold text-[#0F172A]">
-              What information we need and why
-            </h2>
-            <p className="text-sm text-slate-500 mt-1.5 max-w-md mx-auto">
-              These are the three things Lagos renters need to know most —
-              and the three things agents almost never tell them.
-            </p>
-          </div>
+        <section className="relative overflow-hidden rounded-3xl bg-[#0A1628] px-6 py-10 sm:px-10">
+          {/* Colour blobs behind the glass cards */}
+          <div aria-hidden className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-[#00C9A7]/30 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute top-1/3 -right-24 h-72 w-72 rounded-full bg-blue-500/25 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {DATA_POINTS.map(({ icon: Icon, color, bg, title, desc }) => (
-              <div
-                key={title}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-              >
-                <div className={cn('inline-flex h-10 w-10 items-center justify-center rounded-xl mb-4', bg)}>
-                  <Icon className={cn('h-5 w-5', color)} />
-                </div>
-                <p className="font-semibold text-[#0F172A] mb-2">{title}</p>
-                <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
-              </div>
-            ))}
+          <div className="relative">
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-bold text-white">
+                What you tell us, and what it means for others
+              </h2>
+              <p className="text-sm text-slate-400 mt-1.5 max-w-lg mx-auto">
+                Each answer becomes part of a neighbourhood score. Tap any card to
+                see why it matters and how it helps the next renter or buyer.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
+              {DATA_POINTS.map((point) => (
+                <DataPointCard key={point.title} point={point} />
+              ))}
+            </div>
           </div>
         </section>
 
         {/* ── MAIN FORM SECTION ────────────────────────────────── */}
-        <section>
+        <section id="submit-report" className="scroll-mt-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-bold text-[#0F172A]">Submit your report</h2>
@@ -277,20 +374,6 @@ const ContributeDataPage = () => {
               </div>
             ))}
           </div>
-        </section>
-
-        {/* ── BOTTOM CTA — link back to intelligence page ──────── */}
-        <section className="text-center">
-          <p className="text-slate-500 text-sm mb-4">
-            Want to see the intelligence data we already have for Lagos areas?
-          </p>
-          <Link
-            to="/neighbourhood"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-[#0A1628] hover:border-[#00C9A7] hover:text-[#00C9A7] transition-colors shadow-sm"
-          >
-            <MapPin className="h-4 w-4" />
-            Explore Neighbourhood Intelligence
-          </Link>
         </section>
 
       </PageWrapper>

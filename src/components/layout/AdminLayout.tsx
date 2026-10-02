@@ -85,6 +85,12 @@ const adminNavGroups: NavGroup[] = [
         badgeKey: null,
       },
       {
+        label: "Community Submissions",
+        to: ROUTES.ADMIN_COMMUNITY_SUBMISSIONS,
+        icon: FileCheck2,
+        badgeKey: null,
+      },
+      {
         label: "Fraud Reports",
         to: ROUTES.ADMIN_FRAUD,
         icon: AlertTriangle,
@@ -182,6 +188,12 @@ const superadminNavGroups: NavGroup[] = [
       {
         label: "Evidence Review",
         to: ROUTES.ADMIN_EVIDENCE,
+        icon: FileCheck2,
+        badgeKey: null,
+      },
+      {
+        label: "Community Submissions",
+        to: ROUTES.ADMIN_COMMUNITY_SUBMISSIONS,
         icon: FileCheck2,
         badgeKey: null,
       },

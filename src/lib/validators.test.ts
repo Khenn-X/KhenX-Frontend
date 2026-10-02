@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildNeighbourhoodMatchQuery } from './neighbourhoodMatchQuery';
-import { adminProfileSchema, listingSchema, normalizeListingSubmissionData } from './validators';
+import { adminProfileSchema, listingSchema, neighbourhoodUpdateSchema, normalizeListingSubmissionData } from './validators';
 
 test('accepts valid admin profile data', () => {
   const result = adminProfileSchema.safeParse({
@@ -10,6 +10,71 @@ test('accepts valid admin profile data', () => {
   });
 
   assert.equal(result.success, true);
+});
+
+test('keeps optional resident metadata fields in the neighbourhood update schema', () => {
+  const result = adminProfileSchema.safeParse({
+    fullName: 'Ada Okafor',
+    avatarUrl: 'https://example.com/avatar.jpg',
+  });
+
+  assert.equal(result.success, true);
+
+  const residentResult = neighbourhoodUpdateSchema.safeParse({
+    areaName: 'Ikoyi',
+    reporterEmail: 'liveverify@example.com',
+    reporterName: 'Live Verification',
+    streetEstate: 'Test Estate',
+    reportDate: '2026-10-02',
+    season: 'rainy',
+    powerHoursDaily: 'moderate',
+    waterSource: 'borehole',
+    floodingLevel: 'moderate',
+    estateSecurityType: 'manned_gate',
+    wasteCollectionReliability: 'reliable',
+    commuteTimeIslandMin: 28,
+    commuteTimeIkejaMin: 42,
+    trafficCongestionRating: 4,
+    publicTransportAccess: 'available',
+    internetQualityRating: 3,
+    mobileNetworkQuality: '4g',
+    has4G5GCoverage: true,
+    neighbourRelationsRating: 4,
+    commercialActivityLevel: 'mixed',
+  });
+
+  assert.equal(residentResult.success, true);
+  assert.equal(residentResult.data?.estateSecurityType, 'manned_gate');
+  assert.equal(residentResult.data?.commuteTimeIslandMin, 28);
+  assert.equal(residentResult.data?.mobileNetworkQuality, '4g');
+});
+
+test('requires a valid reporter email in the neighbourhood update schema', () => {
+  const result = neighbourhoodUpdateSchema.safeParse({
+    areaName: 'Ikoyi',
+    reporterEmail: '',
+    reporterName: 'Live Verification',
+    streetEstate: 'Test Estate',
+    reportDate: '2026-10-02',
+    season: 'rainy',
+    powerHoursDaily: 'moderate',
+    waterSource: 'borehole',
+    floodingLevel: 'moderate',
+    estateSecurityType: 'manned_gate',
+    wasteCollectionReliability: 'reliable',
+    commuteTimeIslandMin: 28,
+    commuteTimeIkejaMin: 42,
+    trafficCongestionRating: 4,
+    publicTransportAccess: 'available',
+    internetQualityRating: 3,
+    mobileNetworkQuality: '4g',
+    has4G5GCoverage: true,
+    neighbourRelationsRating: 4,
+    commercialActivityLevel: 'mixed',
+  });
+
+  assert.equal(result.success, false);
+  assert.match(result.error?.issues.map((issue) => issue.message).join('\n') ?? '', /Please enter a valid email|Email is required/i);
 });
 
 test('rejects an invalid avatar URL for admin profile data', () => {

@@ -177,6 +177,7 @@ const inputClass = (hasError: boolean) => cn(
 
 const NeighbourhoodReportForm = ({ defaultArea = '', className }: NeighbourhoodReportFormProps) => {
   const [submitted, setSubmitted] = useState(false);
+  const [showAreaDetails, setShowAreaDetails] = useState(false);
   const { mutate: submitReport, isPending, error: submitError } = useSubmitResidentReport();
 
   const {
@@ -204,19 +205,26 @@ const NeighbourhoodReportForm = ({ defaultArea = '', className }: NeighbourhoodR
   const isDry   = season === 'dry';
 
   const onSubmit = (data: NeighbourhoodUpdateFormData) => {
+    const normalizedReportDate = data.reportDate && !Number.isNaN(Date.parse(data.reportDate))
+      ? new Date(data.reportDate).toISOString()
+      : new Date().toISOString();
+
     // Map the comprehensive form data to the ResidentReportPayload
-    // the backend controller already understands
+    // the backend controller already understands.
+    // Important: mapped values must be applied after spreading the raw form data,
+    // otherwise the raw strings overwrite the sanitized numbers/enums.
     submitReport(
       {
+        ...(data as any),
         areaName:          data.areaName,
         reporterEmail:     data.reporterEmail,
+        reportDate:        normalizedReportDate,
         powerHoursDaily:   mapPowerBand(data.powerHoursDaily),
         floodedLastSeason: data.floodingLevel && data.floodingLevel !== 'none',
         floodSeverity:     data.floodingLevel !== 'none' ? (data.floodingLevel as any) : undefined,
         securityRating:    data.nightSafetyRating,
-        incidentCategory:  data.incidentTypes?.[0] ?? 'none',
-        // Extended fields passed through as extra — backend stores them on ResidentReport
-        ...(data as any),
+        incidentCategory:  mapIncidentTypesToCategory(data.incidentTypes),
+        floodDuration:     data.floodDuration,
       },
       { onSuccess: () => setSubmitted(true) }
     );
@@ -228,6 +236,32 @@ const NeighbourhoodReportForm = ({ defaultArea = '', className }: NeighbourhoodR
       none: 0, low: 3.5, moderate: 9, good: 16, excellent: 22,
     };
     return band ? map[band] : undefined;
+  };
+
+  const mapIncidentTypesToCategory = (incidentTypes?: string[]): 'none' | 'petty_theft' | 'robbery' | 'area_boys' | 'other' => {
+    const values = (incidentTypes ?? [])
+      .map((value) => String(value).trim().toLowerCase())
+      .filter(Boolean);
+
+    if (values.length === 0) return 'none';
+
+    if (values.some((value) => value.includes('area_boys') || value.includes('area boys'))) {
+      return 'area_boys';
+    }
+
+    if (values.some((value) => value === 'robbery' || value === 'robbery_burglary' || value === 'attempted_break_in')) {
+      return 'robbery';
+    }
+
+    if (values.some((value) => value === 'petty_theft' || value === 'phone_bag_snatching' || value === 'car_theft')) {
+      return 'petty_theft';
+    }
+
+    if (values.some((value) => value === 'other')) {
+      return 'other';
+    }
+
+    return 'other';
   };
 
   // Success state
@@ -279,13 +313,16 @@ const NeighbourhoodReportForm = ({ defaultArea = '', className }: NeighbourhoodR
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <FieldLabel>Email (optional)</FieldLabel>
+                <FieldLabel required>Email</FieldLabel>
                 <input
                   {...register('reporterEmail')}
                   type="email"
                   placeholder="your@email.com"
                   className={inputClass(!!errors.reporterEmail)}
                 />
+                {errors.reporterEmail && (
+                  <p className="text-xs text-red-500 mt-1">{errors.reporterEmail.message}</p>
+                )}
                 <p className="text-xs text-slate-400 mt-1">
                   Only used to notify you when your area's scores update.
                 </p>
@@ -594,7 +631,7 @@ const NeighbourhoodReportForm = ({ defaultArea = '', className }: NeighbourhoodR
                 <div>
                   <FieldLabel>How long did the flooding last?</FieldLabel>
                   <select
-                    {...register('reportDate')} // placeholder — map to a real field if needed
+                    {...register('floodDuration')}
                     className={inputClass(false)}
                   >
                     <option value="">Select duration</option>
@@ -877,7 +914,223 @@ const NeighbourhoodReportForm = ({ defaultArea = '', className }: NeighbourhoodR
           </div>
         )}
 
-        {/* ── SECTION 9: ADDITIONAL NOTES ──────────────────── */}
+        {/* ── SECTION 9: OPTIONAL AREA DETAILS ─────────────── */}
+        {season && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setShowAreaDetails((value) => !value)}
+              className="flex w-full items-center justify-between gap-3 text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                  <CheckCircle className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-semibold text-[#0F172A] text-sm">Tell us more about your area</p>
+                  <p className="text-xs text-slate-400">Optional context that helps improve neighbourhood quality signals</p>
+                </div>
+              </div>
+              <span className="text-sm text-slate-500">{showAreaDetails ? 'Hide' : 'Add details'}</span>
+            </button>
+
+            {showAreaDetails && (
+              <div className="mt-5 space-y-5">
+                <div>
+                  <FieldLabel>What type of security setup does your estate or street have?</FieldLabel>
+                  <Controller
+                    name="estateSecurityType"
+                    control={control}
+                    render={({ field }) => (
+                      <RadioGroup
+                        options={[
+                          { value: 'none', label: 'No formal security' },
+                          { value: 'manned_gate', label: 'Manned gate' },
+                          { value: 'cctv', label: 'CCTV only' },
+                          { value: 'patrol', label: 'Regular patrols' },
+                          { value: 'smart_access', label: 'Smart access / gate system' },
+                        ]}
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>How reliable is waste collection in your area?</FieldLabel>
+                  <Controller
+                    name="wasteCollectionReliability"
+                    control={control}
+                    render={({ field }) => (
+                      <RadioGroup
+                        options={[
+                          { value: 'reliable', label: 'Reliable and regular' },
+                          { value: 'irregular', label: 'Irregular / sometimes missed' },
+                          { value: 'none', label: 'Not reliable / no collection' },
+                        ]}
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel>Average commute to Victoria Island (minutes)</FieldLabel>
+                    <input
+                      {...register('commuteTimeIslandMin', { valueAsNumber: true })}
+                      type="number"
+                      min={0}
+                      placeholder="30"
+                      className={inputClass(!!errors.commuteTimeIslandMin)}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Average commute to Ikeja (minutes)</FieldLabel>
+                    <input
+                      {...register('commuteTimeIkejaMin', { valueAsNumber: true })}
+                      type="number"
+                      min={0}
+                      placeholder="40"
+                      className={inputClass(!!errors.commuteTimeIkejaMin)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <FieldLabel>How bad is traffic congestion in your area?</FieldLabel>
+                  <Controller
+                    name="trafficCongestionRating"
+                    control={control}
+                    render={({ field }) => (
+                      <ScaleRow
+                        min="Low"
+                        max="Very high"
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>How easy is it to get public transport nearby?</FieldLabel>
+                  <Controller
+                    name="publicTransportAccess"
+                    control={control}
+                    render={({ field }) => (
+                      <RadioGroup
+                        options={[
+                          { value: 'none', label: 'No good option nearby' },
+                          { value: 'limited', label: 'Limited / not always available' },
+                          { value: 'available', label: 'Available most of the time' },
+                          { value: 'strong', label: 'Strong and frequent access' },
+                        ]}
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel>How would you rate internet quality?</FieldLabel>
+                    <Controller
+                      name="internetQualityRating"
+                      control={control}
+                      render={({ field }) => (
+                        <ScaleRow
+                          min="Poor"
+                          max="Excellent"
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>4G / 5G coverage</FieldLabel>
+                    <Controller
+                      name="has4G5GCoverage"
+                      control={control}
+                      render={({ field }) => (
+                        <RadioGroup
+                          options={[
+                            { value: 'true', label: 'Available' },
+                            { value: 'false', label: 'Limited or unavailable' },
+                          ]}
+                          value={field.value === undefined ? undefined : String(field.value)}
+                          onChange={(value) => field.onChange(value === 'true')}
+                        />
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <FieldLabel>Typical mobile network quality</FieldLabel>
+                  <Controller
+                    name="mobileNetworkQuality"
+                    control={control}
+                    render={({ field }) => (
+                      <RadioGroup
+                        options={[
+                          { value: 'none', label: 'No reliable service' },
+                          { value: '3g', label: '3G only' },
+                          { value: '4g', label: '4G / LTE' },
+                          { value: '5g', label: '5G' },
+                        ]}
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>How strong are neighbour relationships in your area?</FieldLabel>
+                  <Controller
+                    name="neighbourRelationsRating"
+                    control={control}
+                    render={({ field }) => (
+                      <ScaleRow
+                        min="Low"
+                        max="Very strong"
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>How active is commercial activity nearby?</FieldLabel>
+                  <Controller
+                    name="commercialActivityLevel"
+                    control={control}
+                    render={({ field }) => (
+                      <RadioGroup
+                        options={[
+                          { value: 'quiet', label: 'Mostly quiet / low activity' },
+                          { value: 'mixed', label: 'Mixed activity' },
+                          { value: 'busy', label: 'Busy / active market area' },
+                          { value: 'very_busy', label: 'Very busy / commercial hub' },
+                        ]}
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── SECTION 10: ADDITIONAL NOTES ─────────────────── */}
         {season && (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <FieldLabel>Anything else we should know about your area? (Optional)</FieldLabel>
