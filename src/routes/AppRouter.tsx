@@ -11,6 +11,7 @@ import Footer from "../components/layout/Footer";
 import DashboardLayout from "../components/layout/DashboardLayout";
 import AdminLayout from "../components/layout/AdminLayout";
 import LoadingSpinner from "../components/shared/LoadingSpinner";
+import khenxLogo from "../assets/kgreen.png";
 
 // ── Public ────────────────────────────────────────────────────────────────────
 const HomePage = lazy(() => import("../pages/public/HomePage"));
@@ -144,13 +145,8 @@ const ContributeStandaloneLayout = ({ children }: { children: React.ReactNode })
   <div className="min-h-screen flex flex-col bg-slate-50">
     <header className="border-b border-slate-200 bg-white/90 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0A1628] text-sm font-bold text-[#00C9A7] shadow-sm">
-              K
-            </div>
-            <div className="text-xl font-black tracking-tight text-[#0A1628]">KhenX</div>
-          </div>
+        <div className="flex items-center justify-start">
+          <img src={khenxLogo} alt="KhenX logo" className="h-10 w-auto object-contain" />
         </div>
       </div>
     </header>

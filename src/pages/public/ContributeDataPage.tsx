@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Zap, Droplets, Shield, CheckCircle,
   ArrowRight, Database, Clock, MapPin,
-  Waves, Route, Wifi, ChevronDown,
+  Waves, Route, Wifi, ChevronDown, Users,
 } from 'lucide-react';
 import logo from '../../assets/kgreen.png';
 import ResidentReportForm from '../../components/neighbourhood/ResidentReportForm';
@@ -159,7 +159,7 @@ const ContributeDataPage = () => {
           <div className="max-w-2xl mx-auto text-center">
 
             <div className="inline-flex items-center gap-2 rounded-full bg-[#00C9A7]/10 border border-[#00C9A7]/20 px-4 py-1.5 mb-5">
-              <img src={logo} alt="KhenX logo" className="h-5 w-5 object-contain" />
+              <img src={logo} alt="KhenX logo" className="h-6 w-6 object-contain" />
               <span className="text-xs font-semibold text-[#00C9A7] uppercase tracking-wide">
                 Community Data Contribution
               </span>
